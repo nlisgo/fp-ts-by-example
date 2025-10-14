@@ -55,6 +55,48 @@ const tasks3 = [T.of(1), T.of("hello")];
 //     Type 'Task<string>' is not assignable to type 'Task<number>'.
 //       Type 'string' is not assignable to type 'number'.
 
-A.sequenceT(T.ApplyPar)(T.of(1), T.of("hello")); // type is task.Task<[number, string]>
+// sequenceT combines tasks into a tuple
+pipe(
+  A.sequenceT(T.ApplyPar)(T.of(1), T.of("hello")),
+  T.map((result) => {
+    console.log("sequenceT result:", result); // [1, "hello"]
+    return result;
+  })
+)();
 
-A.sequenceS(T.ApplyPar)({ a: T.of(1), b: T.of("hello") }); // type is task.Task<{ a: number; b: string; }>
+// sequenceS combines tasks into a struct/object
+pipe(
+  A.sequenceS(T.ApplyPar)({ a: T.of(1), b: T.of("hello") }),
+  T.map((result) => {
+    console.log("sequenceS result:", result); // { a: 1, b: "hello" }
+    return result;
+  })
+)();
+
+pipe(
+  T.of(2),
+  T.chain((result) => T.of(result * 3)),
+  T.chain((result) => T.of(result + 4)),
+  T.map((result) => {
+    console.log(result); // 10
+    return result;
+  })
+)();
+
+const checkPathExists = (path: string) => () =>
+  new Promise((resolve) => {
+    resolve({ path, exists: !path.startsWith('/no/') })
+  });
+
+const program = pipe(
+  ["/bin", "/no/real/path"],
+  T.traverseArray(checkPathExists)
+);
+
+pipe(
+  program,
+  T.map((result) => {
+    console.log(result); // [ { path: '/bin', exists: true }, { path: '/no/real/path', exists: false } ]
+    return result;
+  }),
+)();
