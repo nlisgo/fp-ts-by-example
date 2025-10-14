@@ -10,6 +10,8 @@
     "basics": "node dist/basics.js",
     "async:dev": "ts-node src/async.ts",
     "async": "node dist/async.js",
+    "equality:dev": "ts-node src/equality.ts",
+    "equality": "node dist/equality.js",
     "build": "tsc",
     "dev": "ts-node",
     "lint": "eslint src --ext .ts",
