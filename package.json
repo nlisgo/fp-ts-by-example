@@ -6,6 +6,8 @@
   "scripts": {
     "example:dev": "ts-node src/example.ts",
     "example": "node dist/example.js",
+    "basics:dev": "ts-node src/basics.ts",
+    "basics": "node dist/basics.js",
     "build": "tsc",
     "dev": "ts-node"
   },
