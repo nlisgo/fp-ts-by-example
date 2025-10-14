@@ -2,9 +2,10 @@
   "name": "fp-ts-exercises",
   "version": "1.0.0",
   "description": "A simple repository for fp-ts exercises",
-  "main": "index.js",
+  "main": "example.js",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "example:dev": "ts-node src/example.ts",
+    "example": "node dist/example.js",
     "build": "tsc",
     "dev": "ts-node"
   },
