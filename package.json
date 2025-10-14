@@ -8,6 +8,8 @@
     "example": "node dist/example.js",
     "basics:dev": "ts-node src/basics.ts",
     "basics": "node dist/basics.js",
+    "async-promises-and-tasks:dev": "ts-node src/async-promises-and-tasks.ts",
+    "async-promises-and-tasks": "node dist/async-promises-and-tasks.js",
     "build": "tsc",
     "dev": "ts-node"
   },
