@@ -1,7 +1,7 @@
-import { option } from "fp-ts";
-import { Option, some } from "fp-ts/Option";
-import * as O from "fp-ts/Option";
-import { flow, pipe } from "fp-ts/function";
+import { option } from 'fp-ts';
+import { Option, some } from 'fp-ts/Option';
+import * as O from 'fp-ts/Option';
+import { flow, pipe } from 'fp-ts/function';
 
 const value1: option.Option<number> = option.some(1);
 console.log(value1);
@@ -23,6 +23,7 @@ console.log(pipeOne, pipeTwo); // 16, 16
 const flowAdd5 = (x: number) => x + 5;
 
 const runPipe = (x: number) => pipe(x, pipeAdd5);
+// eslint-disable-next-line fp-ts/no-redundant-flow
 const runFlow = flow(flowAdd5);
 
 console.log(runPipe(3), runFlow(3)); // 8, 8

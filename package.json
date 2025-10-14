@@ -11,9 +11,15 @@
     "async-promises-and-tasks:dev": "ts-node src/async-promises-and-tasks.ts",
     "async-promises-and-tasks": "node dist/async-promises-and-tasks.js",
     "build": "tsc",
-    "dev": "ts-node"
+    "dev": "ts-node",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
   },
-  "keywords": ["fp-ts", "functional-programming", "typescript"],
+  "keywords": [
+    "fp-ts",
+    "functional-programming",
+    "typescript"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -21,6 +27,17 @@
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-fp-ts": "^0.3.2",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-no-loops": "^0.3.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-unused-imports": "^3.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.3"
   }
