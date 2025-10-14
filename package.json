@@ -1,0 +1,22 @@
+{
+  "name": "fp-ts-exercises",
+  "version": "1.0.0",
+  "description": "A simple repository for fp-ts exercises",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "dev": "ts-node"
+  },
+  "keywords": ["fp-ts", "functional-programming", "typescript"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fp-ts": "^2.16.9"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3"
+  }
+}
