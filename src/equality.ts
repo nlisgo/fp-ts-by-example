@@ -1,4 +1,5 @@
 import * as D from 'fp-ts/Date';
+import * as E from 'fp-ts/Either';
 import * as Eq from 'fp-ts/Eq';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
@@ -124,4 +125,18 @@ pipe(
 pipe(
   E7.equals(O.none, O.none),
   log(7.3),
+); // true
+
+const E8 = E.getEq(S.Eq, N.Eq);
+pipe(
+  E8.equals(E.right(3), E.right(3)),
+  log(8.1),
+); // true
+pipe(
+  E8.equals(E.left('3'), E.right(3)),
+  log(8.2),
+); // false
+pipe(
+  E8.equals(E.left('3'), E.left('3')),
+  log(8.3),
 ); // true
