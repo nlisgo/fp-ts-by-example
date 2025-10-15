@@ -26,3 +26,28 @@ const eqPoint: Eq.Eq<Point> = Eq.struct({
 
 pipe(eqPoint.equals({ x: 0, y: 1 }, { x: 0, y: 0 }), console.log); // false
 pipe(eqPoint.equals({ x: 0, y: 0 }, { x: 0, y: 0 }), console.log); // true
+
+type Vector = {
+  from: Point,
+  to: Point,
+};
+
+const eqVector: Eq.Eq<Vector> = Eq.struct({
+  from: eqPoint,
+  to: eqPoint,
+});
+
+pipe(
+  eqVector.equals(
+    { from: { x: 0, y: 1 }, to: { x: 0, y: 0 } },
+    { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
+  ),
+  console.log,
+); // true
+pipe(
+  eqVector.equals(
+    { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
+    { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
+  ),
+  console.log,
+); // true
