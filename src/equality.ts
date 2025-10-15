@@ -1,5 +1,6 @@
 import * as D from 'fp-ts/Date';
 import * as Eq from 'fp-ts/Eq';
+import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as B from 'fp-ts/boolean';
 import { pipe } from 'fp-ts/function';
@@ -109,3 +110,18 @@ pipe(
   eqUserId.equals({ userId: 1, name: 'Giulio' }, { userId: 2, name: 'Giulio' }),
   log(6.2),
 ); // false
+
+const E7 = O.getEq(N.Eq);
+
+pipe(
+  E7.equals(O.some(3), O.some(3)),
+  log(7.1),
+); // true
+pipe(
+  E7.equals(O.none, O.some(4)),
+  log(7.2),
+); // false
+pipe(
+  E7.equals(O.none, O.none),
+  log(7.3),
+); // true
