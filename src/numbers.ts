@@ -1,4 +1,6 @@
-import { concatAll, min, max } from 'fp-ts/Monoid';
+import {
+  concatAll, min, max, struct,
+} from 'fp-ts/Monoid';
 import { pipe } from 'fp-ts/function';
 import * as N from 'fp-ts/number';
 import { pipeAndLog } from './utils/log';
@@ -52,3 +54,20 @@ pipeAndLog(
   ),
   2.2,
 ); // 24
+
+const monoidPoint = struct({
+  x: N.MonoidSum,
+  y: N.MonoidSum,
+});
+
+const monoidPoints = pipe(
+  monoidPoint,
+  concatAll,
+);
+
+pipeAndLog(monoidPoint.concat({ x: 0, y: 3 }, { x: 2, y: 4 }), 3.1); // { x: 2, y: 7 }
+pipeAndLog(monoidPoints([
+  { x: 2, y: 2 },
+  { x: 2, y: 2 },
+  { x: 2, y: 2 },
+]), 3.2); // { x: 6, y: 6 }
