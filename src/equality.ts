@@ -1,5 +1,6 @@
 import * as D from 'fp-ts/Date';
 import * as Eq from 'fp-ts/Eq';
+import * as RA from 'fp-ts/ReadonlyArray';
 import * as B from 'fp-ts/boolean';
 import { pipe } from 'fp-ts/function';
 import * as N from 'fp-ts/number';
@@ -43,11 +44,22 @@ pipe(
     { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
   ),
   console.log,
-); // true
+); // false
 pipe(
   eqVector.equals(
     { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
     { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
   ),
+  console.log,
+); // true
+
+const eqArrayOfStrings = RA.getEq(S.Eq);
+
+pipe(
+  eqArrayOfStrings.equals(['Timex', 'After', 'Time'], ['Time', 'After', 'Time']),
+  console.log,
+); // false
+pipe(
+  eqArrayOfStrings.equals(['Time', 'After', 'Time'], ['Time', 'After', 'Time']),
   console.log,
 ); // true
