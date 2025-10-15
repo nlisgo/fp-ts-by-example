@@ -1,7 +1,8 @@
 import {
   concatAll, min, max, struct,
 } from 'fp-ts/Monoid';
-import { pipe } from 'fp-ts/function';
+import * as B from 'fp-ts/boolean';
+import { getMonoid, pipe } from 'fp-ts/function';
 import * as N from 'fp-ts/number';
 import { pipeAndLog } from './utils/log';
 
@@ -71,3 +72,20 @@ pipeAndLog(monoidPoints([
   { x: 2, y: 2 },
   { x: 2, y: 2 },
 ]), 3.2); // { x: 6, y: 6 }
+
+type Point = {
+  x: number,
+  y: number,
+};
+
+const monoidPredicate = getMonoid(B.MonoidAll)<Point>();
+
+const isPositiveX = (p: Point) => p.x >= 0;
+const isPositiveY = (p: Point) => p.y >= 0;
+
+const isPositiveXY = monoidPredicate.concat(isPositiveX, isPositiveY);
+
+pipeAndLog(isPositiveXY({ x: 1, y: 1 }), 4.1); // true
+pipeAndLog(isPositiveXY({ x: 1, y: -1 }), 4.2); // false
+pipeAndLog(isPositiveXY({ x: -1, y: 1 }), 4.3); // false
+pipeAndLog(isPositiveXY({ x: -1, y: -1 }), 4.4); // false
