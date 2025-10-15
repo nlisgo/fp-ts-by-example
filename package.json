@@ -12,6 +12,8 @@
     "async": "node dist/async.js",
     "equality:dev": "ts-node src/equality.ts",
     "equality": "node dist/equality.js",
+    "ordering:dev": "ts-node src/ordering.ts",
+    "ordering": "node dist/ordering.js",
     "build": "tsc",
     "dev": "ts-node",
     "lint": "eslint src --ext .ts",
