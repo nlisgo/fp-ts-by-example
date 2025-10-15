@@ -1,84 +1,81 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import * as A from 'fp-ts/Apply';
-import * as E from 'fp-ts/Either';
 import * as T from 'fp-ts/Task';
 import * as TE from 'fp-ts/TaskEither';
 import { pipe } from 'fp-ts/function';
+import { log } from './utils/log';
 
 const deepThought: T.Task<number> = async () => Promise.resolve(42);
 
-deepThought().then((n) => {
-  console.log(`The answer is ${n}.`);
-});
+void pipe(
+  deepThought,
+  T.map((n) => `The answer is ${n}.`),
+  T.map(log(1)),
+)();
 
 const fetchGreeting = TE.tryCatch<Error, { name: string }>(
   async () => new Promise((resolve) => { resolve(JSON.parse('{ "name": "Carol" }')); }),
   (reason) => new Error(String(reason)),
 );
 
-fetchGreeting()
-  .then((e) => pipe(
-    e,
-    E.fold(
-      (err) => `I'm sorry, I don't know who you are. (${err.message})`,
-      (x) => `Hello, ${x.name}!`,
-    ),
-  ))
-  .then(console.log);
+void pipe(
+  fetchGreeting,
+  TE.fold(
+    (err) => T.of(`I'm sorry, I don't know who you are. (${err.message})`),
+    (x) => T.of(`Hello, ${x.name}!`),
+  ),
+  T.map(log(2)),
+)();
 
-Promise.all([Promise.resolve(1), Promise.resolve(2)]).then(console.log); // [1, 2]
+void pipe(
+  async () => Promise.all([Promise.resolve(1), Promise.resolve(2)]),
+  T.map(log(3)),
+)();
 
-const tasks1 = [T.of(3), T.of(3)];
-T.sequenceArray(tasks1)().then(console.log); // [ 3, 4 ]
+void pipe(
+  T.sequenceArray([T.of(3), T.of(3)]),
+  T.map(log(4)),
+)();
 
-const log = <A>(x: A) => {
-  console.log(x);
-  return x;
-};
-
-const tasks2 = [
-  pipe(T.delay(200)(T.of('first')), T.map(log)),
-  pipe(T.delay(100)(T.of('second')), T.map(log)),
+const generateTasks = (m: string | number) => [
+  pipe(T.delay(200)(T.of('firstx')), T.map((a) => { log(m)(a); return a; })),
+  pipe(T.delay(100)(T.of('secondx')), T.map((a) => { log(m)(a); return a; })),
 ];
 
-// Parallel: logs 'second' then 'first'
-T.sequenceArray(tasks2)();
+void T.sequenceArray(generateTasks(5.1))();
 
-// Sequential: logs 'first' then 'second'
-T.sequenceSeqArray(tasks2)();
+void T.sequenceSeqArray(generateTasks(5.2))();
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const tasks3 = [T.of(1), T.of('hello')];
-// T.sequenceArray(tasks3);
+// const tasks = [T.of(1), T.of('hello')];
+// T.sequenceArray(tasks);
 // ~~~~~ Argument of type '(Task<number> | Task<string>)[]' is not assignable to parameter of type 'Task<number>[]'.
 //   Type 'Task<number> | Task<string>' is not assignable to type 'Task<number>'.
 //     Type 'Task<string>' is not assignable to type 'Task<number>'.
 //       Type 'string' is not assignable to type 'number'.
 
 // sequenceT combines tasks into a tuple
-pipe(
+void pipe(
   A.sequenceT(T.ApplyPar)(T.of(1), T.of('hello')),
   T.map((result) => {
-    console.log('sequenceT result:', result); // [1, "hello"]
+    log('6 sequenceT result:')(result);
     return result;
   }),
 )();
 
 // sequenceS combines tasks into a struct/object
-pipe(
+void pipe(
   A.sequenceS(T.ApplyPar)({ a: T.of(1), b: T.of('hello') }),
   T.map((result) => {
-    console.log('sequenceS result:', result); // { a: 1, b: "hello" }
+    log('7 sequenceS result:')(result);
     return result;
   }),
 )();
 
-pipe(
+void pipe(
   T.of(2),
   T.chain((result) => T.of(result * 3)),
   T.chain((result) => T.of(result + 4)),
   T.map((result) => {
-    console.log(result); // 10
+    log(8)(result);
     return result;
   }),
 )();
@@ -92,10 +89,10 @@ const program = pipe(
   T.traverseArray(checkPathExists),
 );
 
-pipe(
+void pipe(
   program,
   T.map((result) => {
-    console.log(result); // [ { path: '/bin', exists: true }, { path: '/no/real/path', exists: false } ]
+    log(9)(result);
     return result;
   }),
 )();

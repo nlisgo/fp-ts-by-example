@@ -1,6 +1,7 @@
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
+import { log } from './utils/log';
 
 // Hello World with fp-ts Option
 const greet = (name: string | null): O.Option<string> => pipe(
@@ -8,18 +9,18 @@ const greet = (name: string | null): O.Option<string> => pipe(
   O.map((n) => `Hello, ${n}!`),
 );
 
-console.log('=== Option Example ===');
-console.log(greet('World')); // Some("Hello, World!")
-console.log(greet(null)); // None
+log(1.1)('=== Option Example ===');
+log(1.2)(greet('World')); // Some("Hello, World!")
+log(1.3)(greet(null)); // None
 
 // Working with Either for error handling
 const divide = (a: number, b: number): E.Either<string, number> => (b === 0
   ? E.left('Cannot divide by zero')
   : E.right(a / b));
 
-console.log('\n=== Either Example ===');
-console.log(divide(10, 2)); // Right(5)
-console.log(divide(10, 0)); // Left("Cannot divide by zero")
+log(2.1)('\n=== Either Example ===');
+log(2.2)(divide(10, 2)); // Right(5)
+log(2.3)(divide(10, 0)); // Left("Cannot divide by zero")
 
 // Combining pipe with transformations
 const processNumber = (n: number): string => pipe(
@@ -29,5 +30,5 @@ const processNumber = (n: number): string => pipe(
   (x) => `Result: ${x}`,
 );
 
-console.log('\n=== Pipe Example ===');
-console.log(processNumber(5)); // "Result: 20"
+log(3.1)('\n=== Pipe Example ===');
+log(3.2)(processNumber(5)); // "Result: 20"
