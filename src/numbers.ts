@@ -28,3 +28,27 @@ pipeAndLog(
   ),
   1.2,
 ); // 5
+
+const sum = pipe(
+  N.MonoidSum,
+  concatAll,
+);
+const product = pipe(
+  N.MonoidProduct,
+  concatAll,
+);
+
+pipeAndLog(
+  pipe(
+    [1, 2, 3, 4],
+    sum,
+  ),
+  2.1,
+); // 10
+pipeAndLog(
+  pipe(
+    [1, 2, 3, 4],
+    product,
+  ),
+  2.2,
+); // 24
