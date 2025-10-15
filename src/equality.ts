@@ -5,8 +5,7 @@ import * as B from 'fp-ts/boolean';
 import { pipe } from 'fp-ts/function';
 import * as N from 'fp-ts/number';
 import * as S from 'fp-ts/string';
-
-const log = (m: string) => (v: boolean) => console.log(m, v);
+import { log } from './utils/log';
 
 pipe(B.Eq.equals(false, true), log('1.1')); // false
 pipe(B.Eq.equals(true, true), log('1.1')); // true
