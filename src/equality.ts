@@ -7,14 +7,14 @@ import * as N from 'fp-ts/number';
 import * as S from 'fp-ts/string';
 import { log } from './utils/log';
 
-pipe(B.Eq.equals(false, true), log('1.1')); // false
-pipe(B.Eq.equals(true, true), log('1.1')); // true
-pipe(D.Eq.equals(new Date('1984-01-27'), new Date('1984-01-28')), log('1.2')); // false
-pipe(D.Eq.equals(new Date('1984-01-27'), new Date('1984-01-27')), log('1.2')); // true
-pipe(N.Eq.equals(2, 3), log('1.3')); // false
-pipe(N.Eq.equals(3, 3), log('1.3')); // true
-pipe(S.Eq.equals('Cindi', 'Cyndi'), log('1.4')); // false
-pipe(S.Eq.equals('Cyndi', 'Cyndi'), log('1.4')); // true
+pipe(B.Eq.equals(false, true), log(1.1)); // false
+pipe(B.Eq.equals(true, true), log(1.1)); // true
+pipe(D.Eq.equals(new Date('1984-01-27'), new Date('1984-01-28')), log(1.2)); // false
+pipe(D.Eq.equals(new Date('1984-01-27'), new Date('1984-01-27')), log(1.2)); // true
+pipe(N.Eq.equals(2, 3), log(1.3)); // false
+pipe(N.Eq.equals(3, 3), log(1.3)); // true
+pipe(S.Eq.equals('Cindi', 'Cyndi'), log(1.4)); // false
+pipe(S.Eq.equals('Cyndi', 'Cyndi'), log(1.4)); // true
 
 type Point = {
   x: number,
@@ -26,8 +26,8 @@ const eqPoint: Eq.Eq<Point> = Eq.struct({
   y: N.Eq,
 });
 
-pipe(eqPoint.equals({ x: 0, y: 1 }, { x: 0, y: 0 }), log('2')); // false
-pipe(eqPoint.equals({ x: 0, y: 0 }, { x: 0, y: 0 }), log('2')); // true
+pipe(eqPoint.equals({ x: 0, y: 1 }, { x: 0, y: 0 }), log(2)); // false
+pipe(eqPoint.equals({ x: 0, y: 0 }, { x: 0, y: 0 }), log(2)); // true
 
 type Vector = {
   from: Point,
@@ -44,25 +44,25 @@ pipe(
     { from: { x: 0, y: 1 }, to: { x: 0, y: 0 } },
     { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
   ),
-  log('3'),
+  log(3),
 ); // false
 pipe(
   eqVector.equals(
     { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
     { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
   ),
-  log('3'),
+  log(3),
 ); // true
 
 const eqArrayOfStrings = RA.getEq(S.Eq);
 
 pipe(
   eqArrayOfStrings.equals(['Timex', 'After', 'Time'], ['Time', 'After', 'Time']),
-  log('4'),
+  log(4),
 ); // false
 pipe(
   eqArrayOfStrings.equals(['Time', 'After', 'Time'], ['Time', 'After', 'Time']),
-  log('4'),
+  log(4),
 ); // true
 
 const eqArrayOfPoints = RA.getEq(eqPoint);
@@ -78,7 +78,7 @@ pipe(
       { x: 4, y: 0 },
     ],
   ),
-  log('5'),
+  log(5),
 ); // false
 pipe(
   eqArrayOfPoints.equals(
@@ -91,5 +91,5 @@ pipe(
       { x: 4, y: 0 },
     ],
   ),
-  log('5'),
+  log(5),
 ); // true
