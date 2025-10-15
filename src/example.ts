@@ -62,6 +62,3 @@ pipe(
   add(1)(2)(3)(4)(5)(),
   log(4.2, 'total:'),
 );
-
-// Using fp-ts idiomatic approaches
-// log(4.4, 'total (chained):')(sumNumbers(1)(2)(3)(4)(5)(6)()); // 21
