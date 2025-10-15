@@ -112,3 +112,26 @@ pipeAndLog(monoidPointsTuple([
   [2, 2],
   [2, 2],
 ]), 5.2); // [6, 6]
+
+type PointTuple = [number, number];
+
+const monoidPredicateTupleTyped = getMonoid(B.MonoidAll)<PointTuple>();
+
+const isPositiveXYTuple = monoidPredicateTupleTyped.concat((p: PointTuple) => p[0] >= 0, (p: PointTuple) => p[1] >= 0);
+
+pipeAndLog(pipe(
+  [1, 1],
+  isPositiveXYTuple,
+), 5.1); // true
+pipeAndLog(pipe(
+  [1, -1],
+  isPositiveXYTuple,
+), 5.2); // false
+pipeAndLog(pipe(
+  [-1, 1],
+  isPositiveXYTuple,
+), 5.3); // false
+pipeAndLog(pipe(
+  [-1, -1],
+  isPositiveXYTuple,
+), 5.4); // false
