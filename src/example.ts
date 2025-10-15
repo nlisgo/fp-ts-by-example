@@ -56,8 +56,11 @@ pipe(
   addBasic(3),
   addBasic(4),
   log(4.1, 'total:'),
-  add(1)(2)(3)(4)(5)(6),
-  log(4.3, 'total:'),
+);
+
+pipe(
+  add(1)(2)(3)(4)(5)(),
+  log(4.2, 'total:'),
 );
 
 // Using fp-ts idiomatic approaches
