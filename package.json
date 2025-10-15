@@ -16,8 +16,6 @@
     "ordering": "node dist/ordering.js",
     "numbers:dev": "ts-node src/numbers.ts",
     "numbers": "node dist/numbers.js",
-    "interoperability:dev": "ts-node src/interoperability.ts",
-    "interoperability": "node dist/interoperability.js",
     "build": "tsc",
     "dev": "ts-node",
     "lint": "eslint src --ext .ts",
