@@ -3,6 +3,7 @@ import * as IO from 'fp-ts/IO';
 import * as O from 'fp-ts/Option';
 import * as T from 'fp-ts/Task';
 import * as TE from 'fp-ts/TaskEither';
+import { pipe } from 'fp-ts/function';
 
 export const findIndex = <A>(as: Array<A>, predicate: (a: A) => boolean): O.Option<number> => {
   const index = as.findIndex(predicate);
@@ -24,6 +25,12 @@ export const wait: T.Task<void> = async () => new Promise<void>((resolve) => {
 });
 
 export const get = (url: string): TE.TaskEither<Error, string> => TE.tryCatch(
-  async () => fetch(url).then(async (res) => res.text()),
+  async () => pipe(
+    await pipe(
+      url,
+      fetch,
+    ),
+    async (res) => res.text(),
+  ),
   (reason) => new Error(String(reason)),
 );
