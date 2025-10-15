@@ -1,4 +1,5 @@
 import * as D from 'fp-ts/Date';
+import * as Eq from 'fp-ts/Eq';
 import * as B from 'fp-ts/boolean';
 import { pipe } from 'fp-ts/function';
 import * as N from 'fp-ts/number';
@@ -12,3 +13,16 @@ pipe(N.Eq.equals(2, 3), console.log); // false
 pipe(N.Eq.equals(3, 3), console.log); // true
 pipe(S.Eq.equals('Cindi', 'Cyndi'), console.log); // false
 pipe(S.Eq.equals('Cyndi', 'Cyndi'), console.log); // true
+
+type Point = {
+  x: number,
+  y: number,
+};
+
+const eqPoint: Eq.Eq<Point> = Eq.struct({
+  x: N.Eq,
+  y: N.Eq,
+});
+
+pipe(eqPoint.equals({ x: 0, y: 1 }, { x: 0, y: 0 }), console.log); // false
+pipe(eqPoint.equals({ x: 0, y: 0 }, { x: 0, y: 0 }), console.log); // true
