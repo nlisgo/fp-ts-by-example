@@ -1,6 +1,9 @@
+import { getApplicativeMonoid } from 'fp-ts/Applicative';
+import * as E from 'fp-ts/Either';
 import {
   concatAll, min, max, struct, tuple,
 } from 'fp-ts/Monoid';
+import * as O from 'fp-ts/Option';
 import * as B from 'fp-ts/boolean';
 import { getMonoid, pipe } from 'fp-ts/function';
 import * as N from 'fp-ts/number';
@@ -135,3 +138,45 @@ pipeAndLog(pipe(
   [-1, -1],
   isPositiveXYTuple,
 ), 5.4); // false
+
+const sumOptions = concatAll(getApplicativeMonoid(O.Applicative)(N.MonoidSum));
+const productOptions = concatAll(getApplicativeMonoid(O.Applicative)(N.MonoidProduct));
+
+pipeAndLog(pipe(
+  [O.some(2), O.none, O.some(4)],
+  sumOptions,
+), 6.1); // none
+pipeAndLog(pipe(
+  [O.some(2), O.some(3), O.some(4)],
+  sumOptions,
+), 6.2); // some(9)
+
+pipeAndLog(pipe(
+  [O.some(2), O.none, O.some(4)],
+  productOptions,
+), 6.3); // none
+pipeAndLog(pipe(
+  [O.some(2), O.some(3), O.some(4)],
+  productOptions,
+), 6.3); // some(24)
+
+const sumEithers = concatAll(getApplicativeMonoid(E.Applicative)(N.MonoidSum));
+const productEithers = concatAll(getApplicativeMonoid(E.Applicative)(N.MonoidProduct));
+
+pipeAndLog(pipe(
+  [E.right(2), E.left(3), E.right(4)],
+  sumEithers,
+), 7.1); // left(3)
+pipeAndLog(pipe(
+  [E.right(2), E.right(3), E.right(4)],
+  sumEithers,
+), 7.2); // right(9)
+
+pipeAndLog(pipe(
+  [E.right(2), E.left(3), E.left(4)],
+  productEithers,
+), 7.3); // left(3) <- it's the first left value
+pipeAndLog(pipe(
+  [E.right(2), E.right(3), E.right(4)],
+  productEithers,
+), 7.3); // right(24)
