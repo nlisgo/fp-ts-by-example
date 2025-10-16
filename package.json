@@ -16,6 +16,8 @@
     "ordering": "node dist/ordering.js",
     "numbers:dev": "ts-node src/numbers.ts",
     "numbers": "node dist/numbers.js",
+    "pipe-issue:dev": "ts-node src/pipe-issue.ts",
+    "pipe-issue": "node dist/pipe-issue.js",
     "build": "tsc",
     "dev": "ts-node",
     "lint": "eslint src --ext .ts",
