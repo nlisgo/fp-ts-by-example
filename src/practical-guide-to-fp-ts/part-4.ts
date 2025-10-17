@@ -1,4 +1,5 @@
 import * as A from 'fp-ts/Array';
+import * as NEA from 'fp-ts/NonEmptyArray';
 import { pipe } from 'fp-ts/function';
 import { pipeAndLog } from '../utils/log';
 
@@ -74,3 +75,19 @@ pipeAndLog(pipe(
   [1, 2, 3],
   A.lookup(3),
 ), 4.2); // { _tag: 'None' }
+
+{
+  const foo = [1, 2, 3];
+  if (foo.length > 0) {
+    const firstElement = A.head(foo);
+    pipeAndLog(firstElement, 5); // { _tag: 'Some', value: 1 }
+  }
+}
+
+{
+  const foo = [1, 2, 3];
+  if (A.isNonEmpty(foo)) {
+    const firstElement = NEA.head(foo);
+    pipeAndLog(firstElement, 6); // 1
+  }
+}
