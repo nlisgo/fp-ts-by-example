@@ -43,3 +43,15 @@ import { pipeAndLog } from '../utils/log';
 
   pipeAndLog(sum, 1.4); // 6
 }
+
+{
+  const foo = [1, 2, 3];
+  const bar = ['a', 'b', 'c'];
+
+  const zipped = pipe(
+    foo,
+    A.zip(bar),
+  );
+
+  pipeAndLog(zipped, 2);
+}
