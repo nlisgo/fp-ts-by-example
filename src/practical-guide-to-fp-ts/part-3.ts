@@ -186,3 +186,27 @@ void (async () => {
     TE.fold(absurd, T.of),
   )(), 3.3);
 })();
+
+declare function begin(): Promise<void>;
+declare function commit(): Promise<void>;
+declare function rollback(): Promise<void>;
+
+void (async () => {
+  pipeAndLog(await pipe(
+    TE.tryCatch(
+      async () => begin(),
+      (err) => new Error(`begin txn failed: ${err instanceof Error ? err.message : String(err)}`),
+    ),
+    TE.chain(() => TE.tryCatch(
+      async () => commit(),
+      (err) => new Error(`commit txn failed: ${err instanceof Error ? err.message : String(err)}`),
+    )),
+    TE.orElse((originalError) => pipe(
+      TE.tryCatch(
+        async () => rollback(),
+        (err) => new Error(`rollback txn failed: ${err instanceof Error ? err.message : String(err)}`),
+      ),
+      TE.chainFirst(() => TE.left(originalError)),
+    )),
+  )(), 4);
+})();
