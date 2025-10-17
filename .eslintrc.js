@@ -81,6 +81,7 @@ module.exports = {
       ],
     }],
     'import/prefer-default-export': 'off',
+    'max-classes-per-file': 'off',
     'max-len': ['error', 120, 2, {
       ignoreComments: false,
       ignoreRegExpLiterals: true,
