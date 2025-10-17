@@ -53,7 +53,7 @@ import { pipeAndLog } from '../utils/log';
     A.zip(bar),
   );
 
-  pipeAndLog(zipped, 2);
+  pipeAndLog(zipped, 2); // [[1, 'a], [2, 'b], [3, 'c']]
 }
 
 {
@@ -64,3 +64,13 @@ import { pipeAndLog } from '../utils/log';
   foo[5] = 2; // no runtime error
   pipeAndLog(foo, 3); // [1, 2, 3, undefined, undefined, 2]
 }
+
+pipeAndLog(pipe(
+  [1, 2, 3],
+  A.lookup(1),
+), 4.1); // { _tag: 'Some', value: 2 }
+
+pipeAndLog(pipe(
+  [1, 2, 3],
+  A.lookup(3),
+), 4.2); // { _tag: 'None' }
