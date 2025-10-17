@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import { pipe } from 'fp-ts/function';
+import { flow, pipe } from 'fp-ts/function';
 import { pipeAndLog } from '../utils/log';
 
 {
@@ -68,6 +68,7 @@ import { pipeAndLog } from '../utils/log';
     ),
     4.1,
   ); // undefined
+
   pipeAndLog(
     pipe(
       foo,
@@ -79,4 +80,26 @@ import { pipeAndLog } from '../utils/log';
     ),
     4.2,
   ); // { _tag: 'Some', value: { _tag: 'None' } }
+
+  pipeAndLog(pipe(
+    foo,
+    O.fromNullable,
+    O.map(({ bar }) => pipe(
+      bar,
+      O.fromNullable,
+    )),
+    O.flatten,
+  ), 4.3); // { _tag: 'None' }
+
+  pipeAndLog(pipe(
+    foo,
+    O.fromNullable,
+    O.map(({ bar }) => bar),
+    O.chain(
+      flow(
+        O.fromNullable,
+        O.map(({ buzz }) => buzz),
+      ),
+    ),
+  ), 4.4); // { _tag: 'None' }
 }
