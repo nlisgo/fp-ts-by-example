@@ -59,6 +59,7 @@ import { pipeAndLog } from '../utils/log';
 {
   const foo = [1, 2, 3];
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const x: number = foo[4]; // no compile error
   foo[5] = 2; // no runtime error
   pipeAndLog(foo, 3); // [1, 2, 3, undefined, undefined, 2]
