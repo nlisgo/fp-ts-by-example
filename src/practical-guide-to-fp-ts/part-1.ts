@@ -13,3 +13,15 @@ pipeAndLog(
   ),
   1,
 ); // 4
+
+const toString = (num: number) => `${num}`;
+
+pipeAndLog(
+  pipe(
+    1,
+    add1,
+    multiply2,
+    toString,
+  ),
+  2,
+); // '4'
