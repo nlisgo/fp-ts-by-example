@@ -20,6 +20,8 @@
     "pipe-issue": "node dist/pipe-issue.js",
     "practical-1:dev": "ts-node src/practical-guide-to-fp-ts/part-1.ts",
     "practical-1": "node dist/practical-guide-to-fp-ts/part-1.js",
+    "practical-2:dev": "ts-node src/practical-guide-to-fp-ts/part-2.ts",
+    "practical-2": "node dist/practical-guide-to-fp-ts/part-2.js",
     "build": "tsc",
     "dev": "ts-node",
     "lint": "eslint src --ext .ts",
