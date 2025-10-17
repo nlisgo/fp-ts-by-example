@@ -68,4 +68,15 @@ import { pipeAndLog } from '../utils/log';
     ),
     4.1,
   ); // undefined
+  pipeAndLog(
+    pipe(
+      foo,
+      O.fromNullable,
+      O.map(({ bar }) => pipe(
+        bar,
+        O.fromNullable,
+      )),
+    ),
+    4.2,
+  ); // { _tag: 'Some', value: { _tag: 'None' } }
 }
