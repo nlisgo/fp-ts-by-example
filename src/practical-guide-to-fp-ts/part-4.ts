@@ -55,3 +55,11 @@ import { pipeAndLog } from '../utils/log';
 
   pipeAndLog(zipped, 2);
 }
+
+{
+  const foo = [1, 2, 3];
+
+  const x: number = foo[4]; // no compile error
+  foo[5] = 2; // no runtime error
+  pipeAndLog(foo, 3); // [1, 2, 3, undefined, undefined, 2]
+}
