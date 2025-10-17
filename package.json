@@ -22,6 +22,8 @@
     "practical-1": "node dist/practical-guide-to-fp-ts/part-1.js",
     "practical-2:dev": "ts-node src/practical-guide-to-fp-ts/part-2.ts",
     "practical-2": "node dist/practical-guide-to-fp-ts/part-2.js",
+    "practical-3:dev": "ts-node src/practical-guide-to-fp-ts/part-3.ts",
+    "practical-3": "node dist/practical-guide-to-fp-ts/part-3.js",
     "build": "tsc",
     "dev": "ts-node",
     "lint": "eslint src --ext .ts",
