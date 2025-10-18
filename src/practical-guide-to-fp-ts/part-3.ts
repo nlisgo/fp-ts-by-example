@@ -187,9 +187,9 @@ void (async () => {
   )(), 3.3);
 })();
 
-declare function begin(): Promise<void>;
-declare function commit(): Promise<void>;
-declare function rollback(): Promise<void>;
+declare const begin: () => Promise<void>;
+declare const commit: () => Promise<void>;
+declare const rollback: () => Promise<void>;
 
 void (async () => {
   pipeAndLog(await pipe(
