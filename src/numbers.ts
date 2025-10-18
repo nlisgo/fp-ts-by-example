@@ -1,8 +1,6 @@
 import { getApplicativeMonoid } from 'fp-ts/Applicative';
 import * as E from 'fp-ts/Either';
-import {
-  concatAll, min, max, struct, tuple,
-} from 'fp-ts/Monoid';
+import * as M from 'fp-ts/Monoid';
 import * as O from 'fp-ts/Option';
 import * as B from 'fp-ts/boolean';
 import { getMonoid, pipe } from 'fp-ts/function';
@@ -11,13 +9,13 @@ import { pipeAndLog } from './utils/log';
 
 const minVal = pipe(
   N.Bounded,
-  min,
-  concatAll,
+  M.min,
+  M.concatAll,
 );
 const maxVal = pipe(
   N.Bounded,
-  max,
-  concatAll,
+  M.max,
+  M.concatAll,
 );
 
 pipeAndLog(
@@ -37,11 +35,11 @@ pipeAndLog(
 
 const sum = pipe(
   N.MonoidSum,
-  concatAll,
+  M.concatAll,
 );
 const product = pipe(
   N.MonoidProduct,
-  concatAll,
+  M.concatAll,
 );
 
 pipeAndLog(
@@ -59,14 +57,14 @@ pipeAndLog(
   2.2,
 ); // 24
 
-const monoidPoint = struct({
+const monoidPoint = M.struct({
   x: N.MonoidSum,
   y: N.MonoidSum,
 });
 
 const monoidPoints = pipe(
   monoidPoint,
-  concatAll,
+  M.concatAll,
 );
 
 pipeAndLog(monoidPoint.concat({ x: 0, y: 3 }, { x: 2, y: 4 }), 3.1); // { x: 2, y: 7 }
@@ -102,11 +100,11 @@ pipeAndLog(pipe(
   isPositiveXY,
 ), 4.4); // false
 
-const monoidPointTuple = tuple(N.MonoidSum, N.MonoidSum);
+const monoidPointTuple = M.tuple(N.MonoidSum, N.MonoidSum);
 
 const monoidPointsTuple = pipe(
   monoidPointTuple,
-  concatAll,
+  M.concatAll,
 );
 
 pipeAndLog(monoidPointTuple.concat([0, 3], [2, 4]), 5.1); // [2, 7]
@@ -139,8 +137,8 @@ pipeAndLog(pipe(
   isPositiveXYTuple,
 ), 5.4); // false
 
-const sumOptions = concatAll(getApplicativeMonoid(O.Applicative)(N.MonoidSum));
-const productOptions = concatAll(getApplicativeMonoid(O.Applicative)(N.MonoidProduct));
+const sumOptions = M.concatAll(getApplicativeMonoid(O.Applicative)(N.MonoidSum));
+const productOptions = M.concatAll(getApplicativeMonoid(O.Applicative)(N.MonoidProduct));
 
 pipeAndLog(pipe(
   [O.some(2), O.none, O.some(4)],
@@ -160,8 +158,8 @@ pipeAndLog(pipe(
   productOptions,
 ), 6.3); // some(24)
 
-const sumEithers = concatAll(getApplicativeMonoid(E.Applicative)(N.MonoidSum));
-const productEithers = concatAll(getApplicativeMonoid(E.Applicative)(N.MonoidProduct));
+const sumEithers = M.concatAll(getApplicativeMonoid(E.Applicative)(N.MonoidSum));
+const productEithers = M.concatAll(getApplicativeMonoid(E.Applicative)(N.MonoidProduct));
 
 pipeAndLog(pipe(
   [E.right(2), E.left(3), E.right(4)],

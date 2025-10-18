@@ -1,6 +1,10 @@
 import * as A from 'fp-ts/Array';
+import * as E from 'fp-ts/Either';
+import * as M from 'fp-ts/Monoid';
 import * as NEA from 'fp-ts/NonEmptyArray';
+import { Semigroup } from 'fp-ts/Semigroup';
 import { pipe } from 'fp-ts/function';
+import * as N from 'fp-ts/number';
 import { pipeAndLog } from '../utils/log';
 
 {
@@ -91,3 +95,96 @@ pipeAndLog(pipe(
     pipeAndLog(firstElement, 6); // 1
   }
 }
+
+type Foo = {
+  readonly _tag: 'Foo',
+  readonly f: () => number,
+};
+
+type Bar = {
+  readonly _tag: 'Bar',
+  readonly g: () => number,
+};
+
+{
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const compute = (arr: Array<Foo | Bar>) => {
+    let sum = 0;
+    let max = Number.NEGATIVE_INFINITY;
+
+    arr.forEach((a) => {
+      switch (a._tag) {
+        case 'Foo':
+          sum += a.f();
+          break;
+        case 'Bar':
+          max = Math.max(max, a.g());
+          break;
+      }
+    });
+
+    return sum * max;
+  };
+}
+
+{
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const compute = (arr: Array<Foo | Bar>) => pipe(
+    arr,
+    A.partitionMap((a) => (a._tag === 'Foo' ? E.left(a) : E.right(a))),
+    ({ left: foos, right: bars }) => {
+      const sum = pipe(foos, A.reduce(0, (prev, foo) => prev + foo.f()));
+      const max = pipe(bars, A.reduce(Number.NEGATIVE_INFINITY, (m, bar) => Math.max(m, bar.g())));
+
+      return sum * max;
+    },
+  );
+}
+
+const semigroupMax: Semigroup<number> = {
+  concat: Math.max,
+};
+
+const monoidMax: M.Monoid<number> = {
+  concat: semigroupMax.concat,
+  empty: Number.NEGATIVE_INFINITY,
+};
+
+{
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const compute = (arr: Array<Foo | Bar>) => pipe(
+    arr,
+    A.partitionMap((a) => (a._tag === 'Foo' ? E.left(a) : E.right(a))),
+    ({ left: foos, right: bars }) => {
+      const sum = pipe(foos, A.foldMap(N.MonoidSum)((foo) => foo.f()));
+      const max = pipe(bars, A.foldMap(monoidMax)((bar) => bar.g()));
+
+      return sum * max;
+    },
+  );
+}
+
+const compute = (fooMonoid: M.Monoid<number>, barMonoid: M.Monoid<number>) => (arr: Array<Foo | Bar>) => pipe(
+  arr,
+  A.partitionMap((a) => (a._tag === 'Foo' ? E.left(a) : E.right(a))),
+  ({ left: foos, right: bars }) => {
+    const sum = pipe(foos, A.foldMap(fooMonoid)((foo) => foo.f()));
+    const max = pipe(bars, A.foldMap(barMonoid)((bar) => bar.g()));
+
+    return sum * max;
+  },
+);
+
+// Example: Using compute with different Monoid strategies
+const testData: Array<Foo | Bar> = [
+  { _tag: 'Foo', f: () => 10 },
+  { _tag: 'Foo', f: () => 20 },
+  { _tag: 'Bar', g: () => 5 },
+  { _tag: 'Bar', g: () => 15 },
+];
+
+// Sum Foo values, find max Bar value: (10 + 20) * max(5, 15) = 30 * 15 = 450
+pipeAndLog(compute(N.MonoidSum, monoidMax)(testData), 7.1);
+
+// Find max Foo value, sum Bar values: max(10, 20) * (5 + 15) = 20 * 20 = 400
+pipeAndLog(compute(monoidMax, N.MonoidSum)(testData), 7.2);

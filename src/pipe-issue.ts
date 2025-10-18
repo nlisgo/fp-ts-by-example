@@ -1,5 +1,5 @@
-import * as M from 'fp-ts/Map';
 import * as O from 'fp-ts/Option';
+import * as RM from 'fp-ts/ReadonlyMap';
 import { flow, pipe } from 'fp-ts/function';
 import * as S from 'fp-ts/string';
 import { log } from './utils/log';
@@ -9,13 +9,13 @@ const ids = new Map<string, number>([
 ]);
 
 const solutionMLookupFlow = flow(
-  (input: string) => M.lookup(S.Eq)(input, ids),
+  (input: string) => RM.lookup(S.Eq)(input, ids),
   O.map((v) => `Value: ${v}`),
 );
 
 const solutionMLookupPipe = (input: string) => pipe(
   input,
-  (id) => M.lookup(S.Eq)(id, ids),
+  (id) => RM.lookup(S.Eq)(id, ids),
   O.map((v) => `Value: ${v}`),
 );
 
