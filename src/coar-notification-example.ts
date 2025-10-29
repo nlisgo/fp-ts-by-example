@@ -86,45 +86,68 @@ void (async () => {
 
   const axiosHead = (url: string) => TE.tryCatch(async () => axios.head(url), toError);
 
-  const program = (url: string) => pipe(
-    url,
-    axiosGet,
-    TE.chainEitherKW(({ data }) => pipe(data, notificationCodec.decode, E.map((n) => n.object.id))),
-    TE.chainW(axiosHead),
-    TE.chainEitherKW(({ headers }) => pipe(
-      headersLinkCodec.decode(headers),
-      E.map(({ link }) => pipe(
-        normaliseLinkHeader(link)
-          .split(', ')
-          .map(parseLinkHeader),
-        RA.filter((l): l is NonNullable<typeof l> => l != null),
-        RA.map(parsedHeadersLinkCodec.decode),
-        RA.filterMap(E.matchW(() => O.none, O.some)),
-        RA.last,
-        O.map((l) => l.describedby.url),
-        TE.fromOption(() => new Error('No application/ld+json describedby link found')),
+  const program = (debug: DebugLevel = [0]) => (url: string) => {
+    const logUrl = (message: string) => (urlToLog: string) => {
+      if (debug.includes(0)) {
+        log(`${message}: ${urlToLog}`)('Debug level: 0');
+      }
+      return urlToLog;
+    };
+
+    return pipe(
+      url,
+      logUrl('Retrieve Docmap url from notification'),
+      axiosGet,
+      TE.chainEitherKW(({ data }) => pipe(data, notificationCodec.decode, E.map((n) => n.object.id))),
+      TE.chainW((u) => pipe(
+        u,
+        logUrl('Step 1: retrieved evaluation url'),
+        axiosHead,
       )),
-    )),
-    TE.chainW((links) => pipe(
-      links,
-      TE.chainW(axiosGet),
-      TE.map(({ data }) => pipe(
-        data,
-        docmapsCodec.decode,
-        E.chainW((docmaps) => pipe(
-          docmaps,
-          RA.head,
-          E.fromOption(() => new Error('Docmaps array is empty')),
+      TE.chainEitherKW(({ headers }) => pipe(
+        headersLinkCodec.decode(headers),
+        E.map(({ link }) => pipe(
+          normaliseLinkHeader(link)
+            .split(', ')
+            .map(parseLinkHeader),
+          RA.filter((l): l is NonNullable<typeof l> => l != null),
+          RA.map(parsedHeadersLinkCodec.decode),
+          RA.filterMap(E.matchW(() => O.none, O.some)),
+          RA.last,
+          O.map((l) => l.describedby.url),
+          TE.fromOption(() => new Error('No application/ld+json describedby link found')),
         )),
       )),
-    )),
-  );
+      TE.chainW((links) => pipe(
+        links,
+        TE.chainW((u) => pipe(
+          u,
+          logUrl('Step 2: retrieved Docmap url'),
+          axiosGet,
+        )),
+        TE.map(({ data }) => pipe(
+          data,
+          docmapsCodec.decode,
+          E.chainW((docmaps) => pipe(
+            docmaps,
+            RA.head,
+            E.fromOption(() => new Error('Docmaps array is empty')),
+          )),
+        )),
+      )),
+    );
+  };
 
-  type DebugLevel = (0 | 1 | 2)[];
+  type DebugLevel = Array<0 | 1 | 2>;
 
-  const runProgram = async (url: string, debug: DebugLevel = [0]) => pipe(
+  type ProgramConfig = {
+    url: string,
+    debug?: DebugLevel,
+  };
+
+  const runProgram = async (url: ProgramConfig['url'], debug: ProgramConfig['debug'] = [0]) => pipe(
     url,
-    program,
+    program(debug),
     TE.map((eitherDocmap) => pipe(
       eitherDocmap,
       E.map((docmap) => {
@@ -132,8 +155,8 @@ void (async () => {
           docmap.steps,
           (steps) => Object.entries(steps).map(([k, v]) => ({
             step: k,
-            ...(v['previous-step'] ? { previous: v['previous-step'] } : {}),
-            ...(v['next-step'] ? { next: v['next-step'] } : {}),
+            ...(v['previous-step'] ? { 'previous-step': v['previous-step'] } : {}),
+            ...(v['next-step'] ? { 'next-step': v['next-step'] } : {}),
             actions: v.actions.map(({ inputs, outputs }) => ({
               inputs: inputs.map(({ doi }) => ({ doi })),
               outputs: outputs.map(({ doi, type }) => ({ doi, type })),
@@ -157,5 +180,16 @@ void (async () => {
     )),
   )();
 
-  await runProgram('https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:bf3513ee-1fef-4f30-a61b-20721b505f11', [1]);
+  const runPrograms = async (configs: ReadonlyArray<ProgramConfig>) => {
+    await Promise.all(configs.map(async ({ url, debug = [0, 1] }) => runProgram(url, debug)));
+  };
+
+  await runPrograms([
+    {
+      url: 'https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:bf3513ee-1fef-4f30-a61b-20721b505f11',
+    },
+    {
+      url: 'https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:348fcff8-a313-4051-9437-810acfaaf5cd',
+    },
+  ]);
 })();
