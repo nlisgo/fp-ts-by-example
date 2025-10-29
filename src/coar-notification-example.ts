@@ -209,7 +209,7 @@ void (async () => {
       uuid: '9154949f-6da4-4f16-8997-a0762f19b05a',
     },
     {
-      url: 'https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:7140557f-6fe6-458f-ad59-21a9d53c8eb2',
+      uuid: '7140557f-6fe6-458f-ad59-21a9d53c8eb2',
       debug: [
         DebugLevelValues.BASIC,
         DebugLevelValues.EVALUATION_HEADERS,
