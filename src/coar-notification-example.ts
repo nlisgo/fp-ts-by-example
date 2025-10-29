@@ -72,8 +72,6 @@ void (async () => {
     '@context': t.string,
   });
 
-  type Docmap = t.TypeOf<typeof docmapCodec>;
-
   const docmapsCodec = t.readonlyArray(docmapCodec);
 
   const toError = (reason: unknown) => new Error(reason instanceof Error ? reason.message : String(reason));
@@ -87,33 +85,6 @@ void (async () => {
   const axiosGet = (url: string) => TE.tryCatch(async () => axios.get<unknown>(url), toError);
 
   const axiosHead = (url: string) => TE.tryCatch(async () => axios.head(url), toError);
-
-  const logDocmap = (verbose?: boolean) => (docmapEither: E.Either<unknown, Docmap>) => {
-    if (!verbose) {
-      log(docmapEither)();
-    } else {
-      pipe(
-        docmapEither,
-        E.map((docmap) => {
-          const steps = docmap.steps;
-          const entries = Object.entries(steps).map(([k, v]) => ({
-            step: k,
-            ...(v['previous-step'] ? { previous: v['previous-step'] } : {}),
-            ...(v['next-step'] ? { next: v['next-step'] } : {}),
-            actions: v.actions.map(({ inputs, outputs }) => ({
-              inputs: inputs.map(({ doi }) => ({ doi })),
-              outputs: outputs.map(({ doi, type }) => ({ doi, type })),
-            })),
-            inputs: v.inputs.map(({ doi }) => ({ doi })),
-          }));
-          log(JSON.stringify(entries, null, 2))();
-          return true;
-        }),
-      );
-    }
-
-    return docmapEither;
-  };
 
   const program = pipe(
     axiosGet('https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:bf3513ee-1fef-4f30-a61b-20721b505f11'),
@@ -152,8 +123,25 @@ void (async () => {
     program,
     TE.map((eitherDocmap) => pipe(
       eitherDocmap,
-      logDocmap(true),
-      logDocmap(),
+      E.map((docmap) => {
+        const steps = docmap.steps;
+        const entries = Object.entries(steps).map(([k, v]) => ({
+          step: k,
+          ...(v['previous-step'] ? { previous: v['previous-step'] } : {}),
+          ...(v['next-step'] ? { next: v['next-step'] } : {}),
+          actions: v.actions.map(({ inputs, outputs }) => ({
+            inputs: inputs.map(({ doi }) => ({ doi })),
+            outputs: outputs.map(({ doi, type }) => ({ doi, type })),
+          })),
+          inputs: v.inputs.map(({ doi }) => ({ doi })),
+        }));
+        log(JSON.stringify(entries, null, 2))();
+        return docmap;
+      }),
+      E.map((docmap) => {
+        log(docmap)();
+        return docmap;
+      }),
     )),
   )();
 })();
