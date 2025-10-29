@@ -86,8 +86,9 @@ void (async () => {
 
   const axiosHead = (url: string) => TE.tryCatch(async () => axios.head(url), toError);
 
-  const program = pipe(
-    axiosGet('https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:bf3513ee-1fef-4f30-a61b-20721b505f11'),
+  const program = (url: string) => pipe(
+    url,
+    axiosGet,
     TE.chainEitherKW(({ data }) => pipe(data, notificationCodec.decode, E.map((n) => n.object.id))),
     TE.chainW(axiosHead),
     TE.chainEitherKW(({ headers }) => pipe(
@@ -119,7 +120,10 @@ void (async () => {
     )),
   );
 
-  await pipe(
+  type DebugLevel = (0 | 1 | 2)[];
+
+  const runProgram = async (url: string, debug: DebugLevel = [0]) => pipe(
+    url,
     program,
     TE.map((eitherDocmap) => pipe(
       eitherDocmap,
@@ -137,7 +141,7 @@ void (async () => {
             inputs: v.inputs.map(({ doi }) => ({ doi })),
           })),
           (entries) => JSON.stringify(entries, null, 2),
-          log(),
+          (toLog) => (debug.includes(1) ? log(toLog)('Debug level: 1') : log()()),
         );
 
         return docmap;
@@ -145,11 +149,13 @@ void (async () => {
       E.map((docmap) => {
         pipe(
           JSON.stringify(docmap, null, 2),
-          // log(),
+          (toLog) => (debug.includes(2) ? log(toLog)('Debug level: 2') : log()()),
         );
 
         return docmap;
       }),
     )),
   )();
+
+  await runProgram('https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:bf3513ee-1fef-4f30-a61b-20721b505f11', [1]);
 })();
