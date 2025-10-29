@@ -6,6 +6,8 @@
   "scripts": {
     "example:dev": "ts-node src/example.ts",
     "example": "node dist/example.js",
+    "coar-notification-example:dev": "ts-node src/coar-notification-example.ts",
+    "coar-notification-example": "node dist/coar-notification-example.js",
     "basics:dev": "ts-node src/basics.ts",
     "basics": "node dist/basics.js",
     "async:dev": "ts-node src/async.ts",
