@@ -26,6 +26,13 @@ npm run async:dev
 npm run equality:dev
 npm run ordering:dev
 npm run numbers:dev
+npm run coar-notification-example:dev
+npm run pipe-issue:dev
+npm run practical-1:dev
+npm run practical-2:dev
+npm run practical-3:dev
+npm run practical-4:dev
+npm run practical-5:dev
 ```
 
 ### Production
@@ -39,6 +46,13 @@ npm run async
 npm run equality
 npm run ordering
 npm run numbers
+npm run coar-notification-example
+npm run pipe-issue
+npm run practical-1
+npm run practical-2
+npm run practical-3
+npm run practical-4
+npm run practical-5
 ```
 
 ### Linting
@@ -57,6 +71,9 @@ npm run lint:fix    # Auto-fix issues
 - `src/equality.ts` - Comparing values using Eq type class for primitives, structs, arrays, and complex types
 - `src/ordering.ts` - Ordering and sorting with Ord type class, including custom comparators and compound orderings
 - `src/numbers.ts` - Working with numbers using Monoids (sum, product, min, max), structs, tuples, and Applicative patterns
+- `src/pipe-issue.ts` - Demonstrates pitfalls when piping functions with varying arity
+- `src/coar-notification-example.ts` - Fetches COAR notification docmaps while showcasing TaskEither and runtime validation
+- `src/practical-guide-to-fp-ts/part-1.ts` to `part-5.ts` - Port of the Practical Guide to fp-ts series covering increasingly advanced patterns
 
 ## Resources
 
