@@ -6,7 +6,7 @@ import * as TE from 'fp-ts/TaskEither';
 import { pipe } from 'fp-ts/function';
 import * as t from 'io-ts';
 import parseLinkHeader from 'parse-link-header';
-import { log, pipeAndLog } from './utils/log';
+import { log } from './utils/log';
 
 void (async () => {
   const notificationCodec = t.type({
