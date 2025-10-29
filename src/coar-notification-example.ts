@@ -124,22 +124,30 @@ void (async () => {
     TE.map((eitherDocmap) => pipe(
       eitherDocmap,
       E.map((docmap) => {
-        const steps = docmap.steps;
-        const entries = Object.entries(steps).map(([k, v]) => ({
-          step: k,
-          ...(v['previous-step'] ? { previous: v['previous-step'] } : {}),
-          ...(v['next-step'] ? { next: v['next-step'] } : {}),
-          actions: v.actions.map(({ inputs, outputs }) => ({
-            inputs: inputs.map(({ doi }) => ({ doi })),
-            outputs: outputs.map(({ doi, type }) => ({ doi, type })),
+        pipe(
+          docmap.steps,
+          (steps) => Object.entries(steps).map(([k, v]) => ({
+            step: k,
+            ...(v['previous-step'] ? { previous: v['previous-step'] } : {}),
+            ...(v['next-step'] ? { next: v['next-step'] } : {}),
+            actions: v.actions.map(({ inputs, outputs }) => ({
+              inputs: inputs.map(({ doi }) => ({ doi })),
+              outputs: outputs.map(({ doi, type }) => ({ doi, type })),
+            })),
+            inputs: v.inputs.map(({ doi }) => ({ doi })),
           })),
-          inputs: v.inputs.map(({ doi }) => ({ doi })),
-        }));
-        log(JSON.stringify(entries, null, 2))();
+          (entries) => JSON.stringify(entries, null, 2),
+          log(),
+        );
+
         return docmap;
       }),
       E.map((docmap) => {
-        log(docmap)();
+        pipe(
+          JSON.stringify(docmap, null, 2),
+          // log(),
+        );
+
         return docmap;
       }),
     )),
