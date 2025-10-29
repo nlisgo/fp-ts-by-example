@@ -144,11 +144,16 @@ void (async () => {
           RA.head,
           E.fromOption(() => new Error('Docmaps array is empty')),
         )),
-        logDocmap(true),
-        logDocmap(),
       )),
     )),
   );
 
-  await program();
+  await pipe(
+    program,
+    TE.map((eitherDocmap) => pipe(
+      eitherDocmap,
+      logDocmap(true),
+      logDocmap(),
+    )),
+  )();
 })();
