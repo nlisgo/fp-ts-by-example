@@ -9,6 +9,13 @@ import parseLinkHeader from 'parse-link-header';
 import { log } from './utils/log';
 
 void (async () => {
+  enum DebugLevelValues {
+    BASIC,
+    EVALUATION_HEADERS,
+    DOCMAP_ESSENTIAL,
+    DOCMAP_COMPLETE,
+  }
+
   const notificationCodec = t.type({
     object: t.type({
       id: t.string,
@@ -86,10 +93,10 @@ void (async () => {
 
   const axiosHead = (url: string) => TE.tryCatch(async () => axios.head(url), toError);
 
-  const program = (debug: DebugLevel = [0]) => (url: string) => {
+  const program = (index: number, debug: DebugLevels = [DebugLevelValues.BASIC]) => (url: string) => {
     const logUrl = (message: string) => (urlToLog: string) => {
-      if (debug.includes(0)) {
-        log(`${message}: ${urlToLog}`)('Debug level: 0');
+      if (debug.includes(DebugLevelValues.BASIC)) {
+        log(`${message}: ${urlToLog}`)(`(Debug level: 0) [item: ${index}]`);
       }
       return urlToLog;
     };
@@ -106,6 +113,12 @@ void (async () => {
       )),
       TE.chainEitherKW(({ headers }) => pipe(
         headersLinkCodec.decode(headers),
+        E.map((link) => {
+          if (debug.includes(DebugLevelValues.EVALUATION_HEADERS)) {
+            log(`Evaluation url headers: ${JSON.stringify(link, null, 2)}`)(`(Debug level: 1) [item: ${index}]`);
+          }
+          return link;
+        }),
         E.map(({ link }) => pipe(
           normaliseLinkHeader(link)
             .split(', ')
@@ -138,58 +151,69 @@ void (async () => {
     );
   };
 
-  type DebugLevel = Array<0 | 1 | 2>;
+  type DebugLevel = DebugLevelValues;
 
-  type ProgramConfig = {
-    url: string,
-    debug?: DebugLevel,
+  type DebugLevels = Array<DebugLevel>;
+
+  const runProgram = async (url: string, index: number, debug: DebugLevels = [DebugLevelValues.BASIC]) => {
+    const logDocmap = (debugLevel: DebugLevel) => (docmapToLog: unknown) => {
+      if (debug.includes(debugLevel)) {
+        log(JSON.stringify(docmapToLog, null, 2))(`(Debug level: ${debugLevel}) [item: ${index}]`);
+      }
+      return docmapToLog;
+    };
+    return pipe(
+      url,
+      program(index, debug),
+      TE.map((eitherDocmap) => pipe(
+        eitherDocmap,
+        E.map((docmap) => {
+          pipe(
+            docmap.steps,
+            (steps) => Object.entries(steps).map(([k, v]) => ({
+              step: k,
+              ...(v['previous-step'] ? { 'previous-step': v['previous-step'] } : {}),
+              ...(v['next-step'] ? { 'next-step': v['next-step'] } : {}),
+              actions: v.actions.map(({ inputs, outputs }) => ({
+                inputs: inputs.map(({ doi }) => ({ doi })),
+                outputs: outputs.map(({ doi, type }) => ({ doi, type })),
+              })),
+              inputs: v.inputs.map(({ doi }) => ({ doi })),
+            })),
+            logDocmap(DebugLevelValues.DOCMAP_ESSENTIAL),
+          );
+
+          return docmap;
+        }),
+        E.map((docmap) => {
+          pipe(
+            docmap,
+            logDocmap(DebugLevelValues.DOCMAP_COMPLETE),
+          );
+
+          return docmap;
+        }),
+      )),
+    )();
   };
 
-  const runProgram = async (url: ProgramConfig['url'], debug: ProgramConfig['debug'] = [0]) => pipe(
-    url,
-    program(debug),
-    TE.map((eitherDocmap) => pipe(
-      eitherDocmap,
-      E.map((docmap) => {
-        pipe(
-          docmap.steps,
-          (steps) => Object.entries(steps).map(([k, v]) => ({
-            step: k,
-            ...(v['previous-step'] ? { 'previous-step': v['previous-step'] } : {}),
-            ...(v['next-step'] ? { 'next-step': v['next-step'] } : {}),
-            actions: v.actions.map(({ inputs, outputs }) => ({
-              inputs: inputs.map(({ doi }) => ({ doi })),
-              outputs: outputs.map(({ doi, type }) => ({ doi, type })),
-            })),
-            inputs: v.inputs.map(({ doi }) => ({ doi })),
-          })),
-          (entries) => JSON.stringify(entries, null, 2),
-          (toLog) => (debug.includes(1) ? log(toLog)('Debug level: 1') : log()()),
-        );
-
-        return docmap;
-      }),
-      E.map((docmap) => {
-        pipe(
-          JSON.stringify(docmap, null, 2),
-          (toLog) => (debug.includes(2) ? log(toLog)('Debug level: 2') : log()()),
-        );
-
-        return docmap;
-      }),
-    )),
-  )();
-
-  const runPrograms = async (configs: ReadonlyArray<ProgramConfig>) => {
-    await Promise.all(configs.map(async ({ url, debug = [0, 1] }) => runProgram(url, debug)));
+  const runPrograms = async (configs: ReadonlyArray<{ uuid?: string, url?: string, debug?: DebugLevels }>) => {
+    await Promise.all(configs.map(async ({ uuid, url, debug = [DebugLevelValues.BASIC] }, index) => runProgram(url ?? `https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:${uuid ?? ''}`, index, debug)));
   };
 
   await runPrograms([
     {
-      url: 'https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:bf3513ee-1fef-4f30-a61b-20721b505f11',
+      uuid: 'bf3513ee-1fef-4f30-a61b-20721b505f11',
     },
     {
-      url: 'https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:348fcff8-a313-4051-9437-810acfaaf5cd',
+      uuid: '9154949f-6da4-4f16-8997-a0762f19b05a',
+    },
+    {
+      url: 'https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:7140557f-6fe6-458f-ad59-21a9d53c8eb2',
+      debug: [
+        DebugLevelValues.BASIC,
+        DebugLevelValues.EVALUATION_HEADERS,
+      ],
     },
   ]);
 })();
