@@ -97,13 +97,16 @@ void (async () => {
 
   const toError = (reason: unknown) => new Error(reason instanceof Error ? reason.message : String(reason));
 
-  const normaliseLinkHeader = (raw: string) => raw
-    .replace(/>\s*;\s*/g, '>; ')
-    .replace(/(?<!;)\s+(?=(type|profile|title|rev)=)/g, '; ')
-    .replace(/;\s*;/g, '; ')
-    .trim()
-    .split(', ')
-    .map(parseLinkHeader);
+  const normaliseLinkHeader = (raw: string) => pipe(
+    raw
+      .replace(/>\s*;\s*/g, '>; ')
+      .replace(/(?<!;)\s+(?=(type|profile|title|rev)=)/g, '; ')
+      .replace(/;\s*;/g, '; ')
+      .trim()
+      .split(', ')
+      .map(parseLinkHeader),
+    RA.filter((l): l is NonNullable<typeof l> => l !== null),
+  );
 
   const axiosGet = (url: string) => TE.tryCatch(async () => axios.get<unknown>(url), toError);
 
@@ -139,7 +142,6 @@ void (async () => {
         return pipe(
           decodedHeaders.link,
           normaliseLinkHeader,
-          RA.filter((l): l is NonNullable<typeof l> => l !== null),
           RA.map(parsedHeadersLinkCodec.decode),
           RA.filterMap(E.matchW(() => O.none, O.some)),
           RA.last,
