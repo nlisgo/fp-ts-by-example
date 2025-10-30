@@ -168,7 +168,7 @@ void (async () => {
     )),
   );
 
-  const retrieveDocmapFromNotificatinUrl = (
+  const retrieveDocmapFromNotificationUrl = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC]
   ) => (url: string) => pipe(
@@ -178,7 +178,7 @@ void (async () => {
     TE.chainW(retrieveDocmapFromDocmapUrl),
   );
 
-  const retrieveDocmapFromNotificatinUrlAndLog = async (
+  const retrieveDocmapFromNotificationUrlAndLog = async (
     url: string,
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
@@ -190,7 +190,7 @@ void (async () => {
 
     return pipe(
       url,
-      retrieveDocmapFromNotificatinUrl(item, debug),
+      retrieveDocmapFromNotificationUrl(item, debug),
       TE.map((eitherDocmap) => pipe(
         eitherDocmap,
         E.map((docmap) => {
@@ -219,13 +219,13 @@ void (async () => {
     )();
   };
 
-  const retrieveDocmapsFromNotificatinUrls = async (
+  const retrieveDocmapsFromNotificationUrls = async (
     configs: ReadonlyArray<{ uuid?: string, url?: string, debug?: DebugLevels }>,
   ) => Promise.all(
     configs.map(async (
       { uuid, url, debug = [DebugLevelValues.BASIC] },
       index,
-    ) => retrieveDocmapFromNotificatinUrlAndLog(
+    ) => retrieveDocmapFromNotificationUrlAndLog(
       url ?? `https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:${uuid ?? ''}`,
       uuid ?? index,
       (debug.length > 0 && !debug.includes(DebugLevelValues.BASIC))
@@ -234,12 +234,15 @@ void (async () => {
     )),
   );
 
-  await retrieveDocmapsFromNotificatinUrls([
+  await retrieveDocmapsFromNotificationUrls([
     {
       uuid: 'bf3513ee-1fef-4f30-a61b-20721b505f11',
     },
     {
       uuid: '9154949f-6da4-4f16-8997-a0762f19b05a',
+      debug: [
+        DebugLevelValues.DOCMAP_COMPLETE,
+      ],
     },
     {
       uuid: '7140557f-6fe6-458f-ad59-21a9d53c8eb2',
