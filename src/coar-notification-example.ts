@@ -149,6 +149,7 @@ void (async () => {
         );
       }),
     )),
+    TE.flatten,
   );
 
   const retrieveDocmapFromDocmapUrl = (url: string) => pipe(
@@ -169,7 +170,7 @@ void (async () => {
     url,
     retrieveEvaluationUrlFromNotification(item, debug),
     TE.chainW(retrieveDocmapUrlFromEvaluation(item, debug)),
-    TE.chainW(TE.chainW(retrieveDocmapFromDocmapUrl)),
+    TE.chainW(retrieveDocmapFromDocmapUrl),
   );
 
   const runProgram = async (url: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => {
