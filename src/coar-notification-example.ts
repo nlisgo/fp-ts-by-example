@@ -122,7 +122,7 @@ void (async () => {
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => (url: string) => pipe(
     url,
-    logUrl('Retrieve Docmap url from notification', item, debug),
+    logUrl('Retrieve DocMap url from notification', item, debug),
     axiosGet,
     TE.chainEitherKW(({ data }) => pipe(data, notificationCodec.decode, E.map((n) => n.object.id))),
     TE.map((evaluationUrl) => logUrl('Step 1: retrieved evaluation url', item, debug)(evaluationUrl)),
@@ -146,7 +146,7 @@ void (async () => {
           RA.filterMap(E.matchW(() => O.none, O.some)),
           RA.last,
           O.map((l) => l.describedby.url),
-          O.map((u) => logUrl('Step 2: retrieved Docmap url', item, debug)(u)),
+          O.map((u) => logUrl('Step 2: retrieved DocMap url', item, debug)(u)),
           TE.fromOption(() => new Error('No application/ld+json describedby link found')),
         );
       }),
@@ -163,7 +163,7 @@ void (async () => {
       E.chainW((docmaps) => pipe(
         docmaps,
         RA.head,
-        E.fromOption(() => new Error('Docmaps array is empty')),
+        E.fromOption(() => new Error('DocMaps array is empty')),
       )),
     )),
   );
