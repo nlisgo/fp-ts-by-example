@@ -109,58 +109,66 @@ void (async () => {
 
   const axiosHead = (url: string) => TE.tryCatch(async () => axios.head(url), toError);
 
-  const program = (item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (url: string) => {
-    const logUrl = (message: string) => (urlToLog: string) => {
-      debugLog(`${message}: ${urlToLog}`, debug, DebugLevelValues.BASIC, item);
-      return urlToLog;
-    };
-
-    return pipe(
-      url,
-      logUrl('Retrieve Docmap url from notification'),
-      axiosGet,
-      TE.chainEitherKW(({ data }) => pipe(data, notificationCodec.decode, E.map((n) => n.object.id))),
-      TE.chainW((u) => pipe(
-        u,
-        logUrl('Step 1: retrieved evaluation url'),
-        axiosHead,
-      )),
-      TE.chainEitherKW(({ headers }) => pipe(
-        headers,
-        headersLinkCodec.decode,
-        E.map((decodedHeaders) => {
-          debugLog(`Evaluation url headers: ${jsonStringify(decodedHeaders)}`, debug, DebugLevelValues.EVALUATION_HEADERS, item);
-          return pipe(
-            decodedHeaders.link,
-            normaliseLinkHeader,
-            RA.filter((l): l is NonNullable<typeof l> => l !== null),
-            RA.map(parsedHeadersLinkCodec.decode),
-            RA.filterMap(E.matchW(() => O.none, O.some)),
-            RA.last,
-            O.map((l) => l.describedby.url),
-            TE.fromOption(() => new Error('No application/ld+json describedby link found')),
-          );
-        }),
-      )),
-      TE.chainW((links) => pipe(
-        links,
-        TE.chainW((u) => pipe(
-          u,
-          logUrl('Step 2: retrieved Docmap url'),
-          axiosGet,
-        )),
-        TE.map(({ data }) => pipe(
-          data,
-          docmapsCodec.decode,
-          E.chainW((docmaps) => pipe(
-            docmaps,
-            RA.head,
-            E.fromOption(() => new Error('Docmaps array is empty')),
-          )),
-        )),
-      )),
-    );
+  const logUrl = (message: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (urlToLog: string) => {
+    debugLog(`${message}: ${urlToLog}`, debug, DebugLevelValues.BASIC, item);
+    return urlToLog;
   };
+
+  const retrieveEvaluationUrlFromNotification = (
+    item: Item,
+    debug: DebugLevels = [DebugLevelValues.BASIC],
+  ) => (url: string) => pipe(
+    url,
+    logUrl('Retrieve Docmap url from notification', item, debug),
+    axiosGet,
+    TE.chainEitherKW(({ data }) => pipe(data, notificationCodec.decode, E.map((n) => n.object.id))),
+    TE.map((evaluationUrl) => logUrl('Step 1: retrieved evaluation url', item, debug)(evaluationUrl)),
+  );
+
+  const retrieveDocmapUrlFromEvaluation = (
+    item: Item,
+    debug: DebugLevels = [DebugLevelValues.BASIC],
+  ) => (url: string) => pipe(
+    url,
+    axiosHead,
+    TE.chainEitherKW(({ headers }) => pipe(
+      headers,
+      headersLinkCodec.decode,
+      E.map((decodedHeaders) => {
+        debugLog(`Evaluation url headers: ${jsonStringify(decodedHeaders)}`, debug, DebugLevelValues.EVALUATION_HEADERS, item);
+        return pipe(
+          decodedHeaders.link,
+          normaliseLinkHeader,
+          RA.filter((l): l is NonNullable<typeof l> => l !== null),
+          RA.map(parsedHeadersLinkCodec.decode),
+          RA.filterMap(E.matchW(() => O.none, O.some)),
+          RA.last,
+          O.map((l) => l.describedby.url),
+          O.map((u) => logUrl('Step 2: retrieved Docmap url', item, debug)(u)),
+          TE.fromOption(() => new Error('No application/ld+json describedby link found')),
+        );
+      }),
+    )),
+  );
+
+  const program = (item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (url: string) => pipe(
+    url,
+    retrieveEvaluationUrlFromNotification(item, debug),
+    TE.chainW(retrieveDocmapUrlFromEvaluation(item, debug)),
+    TE.chainW((links) => pipe(
+      links,
+      TE.chainW(axiosGet),
+      TE.map(({ data }) => pipe(
+        data,
+        docmapsCodec.decode,
+        E.chainW((docmaps) => pipe(
+          docmaps,
+          RA.head,
+          E.fromOption(() => new Error('Docmaps array is empty')),
+        )),
+      )),
+    )),
+  );
 
   const runProgram = async (url: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => {
     const logDocmap = (debugLevel: DebugLevel) => (docmapToLog: unknown) => {
