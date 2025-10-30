@@ -170,7 +170,7 @@ void (async () => {
 
   const retrieveDocmapFromNotificationUrl = (
     item: Item,
-    debug: DebugLevels = [DebugLevelValues.BASIC]
+    debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => (url: string) => pipe(
     url,
     retrieveEvaluationUrlFromNotificationUrl(item, debug),
