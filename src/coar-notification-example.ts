@@ -16,6 +16,20 @@ void (async () => {
     DOCMAP_COMPLETE,
   }
 
+  type DebugLevel = DebugLevelValues;
+
+  type DebugLevels = Array<DebugLevel>;
+
+  type Item = string | number;
+
+  const jsonStringify = (data: unknown) => JSON.stringify(data, null, 2);
+
+  const debugLog = (message: string, debug: DebugLevels, debugLevel: DebugLevel, item: Item) => {
+    if (debug.includes(debugLevel)) {
+      return log(message)(`(Debug level: ${debugLevel}) [item: ${item}]`);
+    }
+  };
+
   const notificationCodec = t.type({
     object: t.type({
       id: t.string,
@@ -87,17 +101,17 @@ void (async () => {
     .replace(/>\s*;\s*/g, '>; ')
     .replace(/(?<!;)\s+(?=(type|profile|title|rev)=)/g, '; ')
     .replace(/;\s*;/g, '; ')
-    .trim();
+    .trim()
+    .split(', ')
+    .map(parseLinkHeader);
 
   const axiosGet = (url: string) => TE.tryCatch(async () => axios.get<unknown>(url), toError);
 
   const axiosHead = (url: string) => TE.tryCatch(async () => axios.head(url), toError);
 
-  const program = (index: number, debug: DebugLevels = [DebugLevelValues.BASIC]) => (url: string) => {
+  const program = (item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (url: string) => {
     const logUrl = (message: string) => (urlToLog: string) => {
-      if (debug.includes(DebugLevelValues.BASIC)) {
-        log(`${message}: ${urlToLog}`)(`(Debug level: 0) [item: ${index}]`);
-      }
+      debugLog(`${message}: ${urlToLog}`, debug, DebugLevelValues.BASIC, item);
       return urlToLog;
     };
 
@@ -112,24 +126,21 @@ void (async () => {
         axiosHead,
       )),
       TE.chainEitherKW(({ headers }) => pipe(
-        headersLinkCodec.decode(headers),
-        E.map((link) => {
-          if (debug.includes(DebugLevelValues.EVALUATION_HEADERS)) {
-            log(`Evaluation url headers: ${JSON.stringify(link, null, 2)}`)(`(Debug level: 1) [item: ${index}]`);
-          }
-          return link;
+        headers,
+        headersLinkCodec.decode,
+        E.map((decodedHeaders) => {
+          debugLog(`Evaluation url headers: ${jsonStringify(decodedHeaders)}`, debug, DebugLevelValues.EVALUATION_HEADERS, item);
+          return pipe(
+            decodedHeaders.link,
+            normaliseLinkHeader,
+            RA.filter((l): l is NonNullable<typeof l> => l !== null),
+            RA.map(parsedHeadersLinkCodec.decode),
+            RA.filterMap(E.matchW(() => O.none, O.some)),
+            RA.last,
+            O.map((l) => l.describedby.url),
+            TE.fromOption(() => new Error('No application/ld+json describedby link found')),
+          );
         }),
-        E.map(({ link }) => pipe(
-          normaliseLinkHeader(link)
-            .split(', ')
-            .map(parseLinkHeader),
-          RA.filter((l): l is NonNullable<typeof l> => l != null),
-          RA.map(parsedHeadersLinkCodec.decode),
-          RA.filterMap(E.matchW(() => O.none, O.some)),
-          RA.last,
-          O.map((l) => l.describedby.url),
-          TE.fromOption(() => new Error('No application/ld+json describedby link found')),
-        )),
       )),
       TE.chainW((links) => pipe(
         links,
@@ -151,20 +162,15 @@ void (async () => {
     );
   };
 
-  type DebugLevel = DebugLevelValues;
-
-  type DebugLevels = Array<DebugLevel>;
-
-  const runProgram = async (url: string, index: number, debug: DebugLevels = [DebugLevelValues.BASIC]) => {
+  const runProgram = async (url: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => {
     const logDocmap = (debugLevel: DebugLevel) => (docmapToLog: unknown) => {
-      if (debug.includes(debugLevel)) {
-        log(JSON.stringify(docmapToLog, null, 2))(`(Debug level: ${debugLevel}) [item: ${index}]`);
-      }
+      debugLog(jsonStringify(docmapToLog), debug, debugLevel, item);
       return docmapToLog;
     };
+
     return pipe(
       url,
-      program(index, debug),
+      program(item, debug),
       TE.map((eitherDocmap) => pipe(
         eitherDocmap,
         E.map((docmap) => {
@@ -186,20 +192,24 @@ void (async () => {
           return docmap;
         }),
         E.map((docmap) => {
-          pipe(
-            docmap,
-            logDocmap(DebugLevelValues.DOCMAP_COMPLETE),
-          );
-
+          logDocmap(DebugLevelValues.DOCMAP_COMPLETE)(docmap);
           return docmap;
         }),
       )),
     )();
   };
 
-  const runPrograms = async (configs: ReadonlyArray<{ uuid?: string, url?: string, debug?: DebugLevels }>) => {
-    await Promise.all(configs.map(async ({ uuid, url, debug = [DebugLevelValues.BASIC] }, index) => runProgram(url ?? `https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:${uuid ?? ''}`, index, debug)));
-  };
+  const runPrograms = async (
+    configs: ReadonlyArray<{ uuid?: string, url?: string, debug?: DebugLevels }>,
+  ) => Promise.all(
+    configs.map(async ({ uuid, url, debug = [DebugLevelValues.BASIC] }, index) => runProgram(
+      url ?? `https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:${uuid ?? ''}`,
+      uuid ?? index,
+      (debug.length > 0 && !debug.includes(DebugLevelValues.BASIC))
+        ? [DebugLevelValues.BASIC, ...debug]
+        : debug,
+    )),
+  );
 
   await runPrograms([
     {
@@ -211,7 +221,6 @@ void (async () => {
     {
       uuid: '7140557f-6fe6-458f-ad59-21a9d53c8eb2',
       debug: [
-        DebugLevelValues.BASIC,
         DebugLevelValues.EVALUATION_HEADERS,
       ],
     },
