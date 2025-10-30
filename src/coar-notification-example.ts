@@ -114,7 +114,7 @@ void (async () => {
     return urlToLog;
   };
 
-  const retrieveEvaluationUrlFromNotification = (
+  const retrieveEvaluationUrlFromNotificationUrl = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => (url: string) => pipe(
@@ -125,7 +125,7 @@ void (async () => {
     TE.map((evaluationUrl) => logUrl('Step 1: retrieved evaluation url', item, debug)(evaluationUrl)),
   );
 
-  const retrieveDocmapUrlFromEvaluation = (
+  const retrieveDocmapUrlFromEvaluationUrl = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => (url: string) => pipe(
@@ -168,8 +168,8 @@ void (async () => {
 
   const program = (item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (url: string) => pipe(
     url,
-    retrieveEvaluationUrlFromNotification(item, debug),
-    TE.chainW(retrieveDocmapUrlFromEvaluation(item, debug)),
+    retrieveEvaluationUrlFromNotificationUrl(item, debug),
+    TE.chainW(retrieveDocmapUrlFromEvaluationUrl(item, debug)),
     TE.chainW(retrieveDocmapFromDocmapUrl),
   );
 
