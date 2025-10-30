@@ -117,7 +117,7 @@ void (async () => {
     return urlToLog;
   };
 
-  const retrieveAnnouncementActionUriFromNotificationUri = (
+  const retrieveAnnouncementActionUriFromCoarNotificationUri = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => (url: string) => pipe(
@@ -168,17 +168,17 @@ void (async () => {
     )),
   );
 
-  const retrieveDocmapFromNotificationUri = (
+  const retrieveDocmapFromCoarNotificationUri = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => (url: string) => pipe(
     url,
-    retrieveAnnouncementActionUriFromNotificationUri(item, debug),
+    retrieveAnnouncementActionUriFromCoarNotificationUri(item, debug),
     TE.chainW(retrieveSignpostingDocmapUriFromAnnouncementActionUri(item, debug)),
     TE.chainW(retrieveDocmapFromSignpostingDocmapUri),
   );
 
-  const retrieveDocmapFromNotificationUriAndLog = async (
+  const retrieveDocmapFromCoarNotificationUriAndLog = async (
     url: string,
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
@@ -190,7 +190,7 @@ void (async () => {
 
     return pipe(
       url,
-      retrieveDocmapFromNotificationUri(item, debug),
+      retrieveDocmapFromCoarNotificationUri(item, debug),
       TE.map((eitherDocmap) => pipe(
         eitherDocmap,
         E.map((docmap) => {
@@ -219,12 +219,12 @@ void (async () => {
     )();
   };
 
-  const retrieveDocmapsFromNotificationUris = async (
+  const retrieveDocmapsFromCoarNotificationUris = async (
     configs: ReadonlyArray<{ uuid: string, debug?: DebugLevels }>,
   ) => Promise.all(
     configs.map(async (
       { uuid, debug = [DebugLevelValues.BASIC] },
-    ) => retrieveDocmapFromNotificationUriAndLog(
+    ) => retrieveDocmapFromCoarNotificationUriAndLog(
       `https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:${uuid}`,
       uuid,
       (debug.length > 0 && !debug.includes(DebugLevelValues.BASIC))
@@ -233,7 +233,7 @@ void (async () => {
     )),
   );
 
-  await retrieveDocmapsFromNotificationUris([
+  await retrieveDocmapsFromCoarNotificationUris([
     {
       uuid: 'bf3513ee-1fef-4f30-a61b-20721b505f11',
     },
