@@ -168,14 +168,21 @@ void (async () => {
     )),
   );
 
-  const program = (item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (url: string) => pipe(
+  const retrieveDocmapFromNotificatinUrl = (
+    item: Item,
+    debug: DebugLevels = [DebugLevelValues.BASIC]
+  ) => (url: string) => pipe(
     url,
     retrieveEvaluationUrlFromNotificationUrl(item, debug),
     TE.chainW(retrieveDocmapUrlFromEvaluationUrl(item, debug)),
     TE.chainW(retrieveDocmapFromDocmapUrl),
   );
 
-  const runProgram = async (url: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => {
+  const retrieveDocmapFromNotificatinUrlAndLog = async (
+    url: string,
+    item: Item,
+    debug: DebugLevels = [DebugLevelValues.BASIC],
+  ) => {
     const logDocmap = (debugLevel: DebugLevel) => (docmapToLog: unknown) => {
       debugLog(jsonStringify(docmapToLog), debug, debugLevel, item);
       return docmapToLog;
@@ -183,7 +190,7 @@ void (async () => {
 
     return pipe(
       url,
-      program(item, debug),
+      retrieveDocmapFromNotificatinUrl(item, debug),
       TE.map((eitherDocmap) => pipe(
         eitherDocmap,
         E.map((docmap) => {
@@ -212,10 +219,13 @@ void (async () => {
     )();
   };
 
-  const runPrograms = async (
+  const retrieveDocmapsFromNotificatinUrls = async (
     configs: ReadonlyArray<{ uuid?: string, url?: string, debug?: DebugLevels }>,
   ) => Promise.all(
-    configs.map(async ({ uuid, url, debug = [DebugLevelValues.BASIC] }, index) => runProgram(
+    configs.map(async (
+      { uuid, url, debug = [DebugLevelValues.BASIC] },
+      index,
+    ) => retrieveDocmapFromNotificatinUrlAndLog(
       url ?? `https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:${uuid ?? ''}`,
       uuid ?? index,
       (debug.length > 0 && !debug.includes(DebugLevelValues.BASIC))
@@ -224,7 +234,7 @@ void (async () => {
     )),
   );
 
-  await runPrograms([
+  await retrieveDocmapsFromNotificatinUrls([
     {
       uuid: 'bf3513ee-1fef-4f30-a61b-20721b505f11',
     },
