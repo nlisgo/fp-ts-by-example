@@ -108,37 +108,37 @@ void (async () => {
     RA.filter((l): l is NonNullable<typeof l> => l !== null),
   );
 
-  const axiosGet = (url: string) => TE.tryCatch(async () => axios.get<unknown>(url), toError);
+  const axiosGet = (uri: string) => TE.tryCatch(async () => axios.get<unknown>(uri), toError);
 
-  const axiosHead = (url: string) => TE.tryCatch(async () => axios.head(url), toError);
+  const axiosHead = (uri: string) => TE.tryCatch(async () => axios.head(uri), toError);
 
-  const logUrl = (message: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (urlToLog: string) => {
-    debugLog(`${message}: ${urlToLog}`, debug, DebugLevelValues.BASIC, item);
-    return urlToLog;
+  const logUri = (message: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (uri: string) => {
+    debugLog(`${message}: ${uri}`, debug, DebugLevelValues.BASIC, item);
+    return uri;
   };
 
   const retrieveAnnouncementActionUriFromCoarNotificationUri = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
-  ) => (url: string) => pipe(
-    url,
-    logUrl('Retrieve DocMap url from notification', item, debug),
+  ) => (uri: string) => pipe(
+    uri,
+    logUri('Retrieve DocMap uri from notification', item, debug),
     axiosGet,
     TE.chainEitherKW(({ data }) => pipe(data, notificationCodec.decode, E.map((n) => n.object.id))),
-    TE.map((evaluationUrl) => logUrl('Step 1: retrieved evaluation url', item, debug)(evaluationUrl)),
+    TE.map((evaluationUrl) => logUri('Step 1: retrieved evaluation uri', item, debug)(evaluationUrl)),
   );
 
   const retrieveSignpostingDocmapUriFromAnnouncementActionUri = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
-  ) => (url: string) => pipe(
-    url,
+  ) => (uri: string) => pipe(
+    uri,
     axiosHead,
     TE.chainEitherKW(({ headers }) => pipe(
       headers,
       headersLinkCodec.decode,
       E.map((decodedHeaders) => {
-        debugLog(`Evaluation url headers: ${jsonStringify(decodedHeaders)}`, debug, DebugLevelValues.EVALUATION_HEADERS, item);
+        debugLog(`Evaluation uri headers: ${jsonStringify(decodedHeaders)}`, debug, DebugLevelValues.EVALUATION_HEADERS, item);
         return pipe(
           decodedHeaders.link,
           normaliseLinkHeader,
@@ -146,7 +146,7 @@ void (async () => {
           RA.filterMap(E.matchW(() => O.none, O.some)),
           RA.last,
           O.map((l) => l.describedby.url),
-          O.map((u) => logUrl('Step 2: retrieved DocMap url', item, debug)(u)),
+          O.map((u) => logUri('Step 2: retrieved DocMap uri', item, debug)(u)),
           TE.fromOption(() => new Error('No application/ld+json describedby link found')),
         );
       }),
@@ -154,8 +154,8 @@ void (async () => {
     TE.flatten,
   );
 
-  const retrieveDocmapFromSignpostingDocmapUri = (url: string) => pipe(
-    url,
+  const retrieveDocmapFromSignpostingDocmapUri = (uri: string) => pipe(
+    uri,
     axiosGet,
     TE.map(({ data }) => pipe(
       data,
@@ -171,25 +171,25 @@ void (async () => {
   const retrieveDocmapFromCoarNotificationUri = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
-  ) => (url: string) => pipe(
-    url,
+  ) => (uri: string) => pipe(
+    uri,
     retrieveAnnouncementActionUriFromCoarNotificationUri(item, debug),
     TE.chainW(retrieveSignpostingDocmapUriFromAnnouncementActionUri(item, debug)),
     TE.chainW(retrieveDocmapFromSignpostingDocmapUri),
   );
 
   const retrieveDocmapFromCoarNotificationUriAndLog = async (
-    url: string,
+    uri: string,
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => {
-    const logDocmap = (debugLevel: DebugLevel) => (docmapToLog: unknown) => {
-      debugLog(jsonStringify(docmapToLog), debug, debugLevel, item);
-      return docmapToLog;
+    const logDocmap = (debugLevel: DebugLevel) => (docmap: unknown) => {
+      debugLog(jsonStringify(docmap), debug, debugLevel, item);
+      return docmap;
     };
 
     return pipe(
-      url,
+      uri,
       retrieveDocmapFromCoarNotificationUri(item, debug),
       TE.map((eitherDocmap) => pipe(
         eitherDocmap,
