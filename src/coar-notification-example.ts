@@ -151,23 +151,25 @@ void (async () => {
     )),
   );
 
+  const retrieveDocmapFromDocmapUrl = (url: string) => pipe(
+    url,
+    axiosGet,
+    TE.map(({ data }) => pipe(
+      data,
+      docmapsCodec.decode,
+      E.chainW((docmaps) => pipe(
+        docmaps,
+        RA.head,
+        E.fromOption(() => new Error('Docmaps array is empty')),
+      )),
+    )),
+  );
+
   const program = (item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (url: string) => pipe(
     url,
     retrieveEvaluationUrlFromNotification(item, debug),
     TE.chainW(retrieveDocmapUrlFromEvaluation(item, debug)),
-    TE.chainW((links) => pipe(
-      links,
-      TE.chainW(axiosGet),
-      TE.map(({ data }) => pipe(
-        data,
-        docmapsCodec.decode,
-        E.chainW((docmaps) => pipe(
-          docmaps,
-          RA.head,
-          E.fromOption(() => new Error('Docmaps array is empty')),
-        )),
-      )),
-    )),
+    TE.chainW(TE.chainW(retrieveDocmapFromDocmapUrl)),
   );
 
   const runProgram = async (url: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => {
