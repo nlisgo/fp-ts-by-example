@@ -124,7 +124,10 @@ void (async () => {
     uri,
     logUri('Retrieve DocMap uri from notification', item, debug),
     axiosGet,
-    TE.chainEitherKW(({ data }) => pipe(data, notificationCodec.decode, E.map((n) => n.object.id))),
+    TE.chainEitherKW(({ data }) => pipe(
+      data, notificationCodec.decode,
+      E.map((n) => n.object.id),
+    )),
     TE.map((evaluationUrl) => logUri('Step 1: retrieved evaluation uri', item, debug)(evaluationUrl)),
   );
 
