@@ -220,14 +220,13 @@ void (async () => {
   };
 
   const retrieveDocmapsFromNotificationUrls = async (
-    configs: ReadonlyArray<{ uuid?: string, url?: string, debug?: DebugLevels }>,
+    configs: ReadonlyArray<{ uuid: string, debug?: DebugLevels }>,
   ) => Promise.all(
     configs.map(async (
-      { uuid, url, debug = [DebugLevelValues.BASIC] },
-      index,
+      { uuid, debug = [DebugLevelValues.BASIC] },
     ) => retrieveDocmapFromNotificationUrlAndLog(
-      url ?? `https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:${uuid ?? ''}`,
-      uuid ?? index,
+      `https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:${uuid}`,
+      uuid,
       (debug.length > 0 && !debug.includes(DebugLevelValues.BASIC))
         ? [DebugLevelValues.BASIC, ...debug]
         : debug,
@@ -240,9 +239,6 @@ void (async () => {
     },
     {
       uuid: '9154949f-6da4-4f16-8997-a0762f19b05a',
-      debug: [
-        DebugLevelValues.DOCMAP_COMPLETE,
-      ],
     },
     {
       uuid: '7140557f-6fe6-458f-ad59-21a9d53c8eb2',
