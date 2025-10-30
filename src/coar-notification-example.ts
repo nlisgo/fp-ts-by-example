@@ -117,7 +117,7 @@ void (async () => {
     return urlToLog;
   };
 
-  const retrieveEvaluationUrlFromNotificationUrl = (
+  const retrieveAnnouncementActionUriFromNotificationUri = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => (url: string) => pipe(
@@ -128,7 +128,7 @@ void (async () => {
     TE.map((evaluationUrl) => logUrl('Step 1: retrieved evaluation url', item, debug)(evaluationUrl)),
   );
 
-  const retrieveDocmapUrlFromEvaluationUrl = (
+  const retrieveSignpostingDocmapUriFromAnnouncementActionUri = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => (url: string) => pipe(
@@ -154,7 +154,7 @@ void (async () => {
     TE.flatten,
   );
 
-  const retrieveDocmapFromDocmapUrl = (url: string) => pipe(
+  const retrieveDocmapFromSignpostingDocmapUri = (url: string) => pipe(
     url,
     axiosGet,
     TE.map(({ data }) => pipe(
@@ -168,17 +168,17 @@ void (async () => {
     )),
   );
 
-  const retrieveDocmapFromNotificationUrl = (
+  const retrieveDocmapFromNotificationUri = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => (url: string) => pipe(
     url,
-    retrieveEvaluationUrlFromNotificationUrl(item, debug),
-    TE.chainW(retrieveDocmapUrlFromEvaluationUrl(item, debug)),
-    TE.chainW(retrieveDocmapFromDocmapUrl),
+    retrieveAnnouncementActionUriFromNotificationUri(item, debug),
+    TE.chainW(retrieveSignpostingDocmapUriFromAnnouncementActionUri(item, debug)),
+    TE.chainW(retrieveDocmapFromSignpostingDocmapUri),
   );
 
-  const retrieveDocmapFromNotificationUrlAndLog = async (
+  const retrieveDocmapFromNotificationUriAndLog = async (
     url: string,
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
@@ -190,7 +190,7 @@ void (async () => {
 
     return pipe(
       url,
-      retrieveDocmapFromNotificationUrl(item, debug),
+      retrieveDocmapFromNotificationUri(item, debug),
       TE.map((eitherDocmap) => pipe(
         eitherDocmap,
         E.map((docmap) => {
@@ -219,12 +219,12 @@ void (async () => {
     )();
   };
 
-  const retrieveDocmapsFromNotificationUrls = async (
+  const retrieveDocmapsFromNotificationUris = async (
     configs: ReadonlyArray<{ uuid: string, debug?: DebugLevels }>,
   ) => Promise.all(
     configs.map(async (
       { uuid, debug = [DebugLevelValues.BASIC] },
-    ) => retrieveDocmapFromNotificationUrlAndLog(
+    ) => retrieveDocmapFromNotificationUriAndLog(
       `https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:${uuid}`,
       uuid,
       (debug.length > 0 && !debug.includes(DebugLevelValues.BASIC))
@@ -233,7 +233,7 @@ void (async () => {
     )),
   );
 
-  await retrieveDocmapsFromNotificationUrls([
+  await retrieveDocmapsFromNotificationUris([
     {
       uuid: 'bf3513ee-1fef-4f30-a61b-20721b505f11',
     },
