@@ -29,18 +29,18 @@ void (async () => {
     }
   };
 
-  const notificationCodec = t.type({
-    object: t.type({
+  const notificationCodec = t.strict({
+    object: t.strict({
       id: t.string,
     }),
   });
 
-  const headersLinkCodec = t.type({
+  const headersLinkCodec = t.strict({
     link: t.string,
   });
 
-  const parsedHeadersLinkCodec = t.type({
-    describedby: t.type({
+  const parsedHeadersLinkCodec = t.strict({
+    describedby: t.strict({
       url: t.string,
       type: t.literal('application/ld+json'),
     }),
@@ -81,7 +81,7 @@ void (async () => {
   const docmapCodec = t.strict({
     type: t.literal('docmap'),
     id: t.string,
-    publisher: t.type({
+    publisher: t.strict({
       name: t.string,
       url: t.string,
     }),
