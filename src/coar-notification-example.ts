@@ -144,14 +144,13 @@ void (async () => {
     axiosHead,
     TE.map(({ headers }) => headers),
     TE.chainEitherKW(headersLinkCodec.decode),
-    TE.map((decodedHeaders) => {
+    TE.tapIO((decodedHeaders) => () => {
       debugLog(`Evaluation uri headers: ${jsonStringify(decodedHeaders)}`, debug, DebugLevelValues.EVALUATION_HEADERS, item);
-      return decodedHeaders;
     }),
     TE.map(({ link }) => link),
     TE.map(normaliseLinkHeader),
     TE.map(RA.map(parsedHeadersLinkCodec.decode)),
-    TE.map(RA.filterMap(E.matchW(() => O.none, O.some))),
+    TE.map(RA.filterMap(O.getRight)),
     TE.map(RA.last),
     TE.chainW(TE.fromOption(() => new Error('Header links array is empty'))),
     TE.map(({ describedby }) => describedby.url),
