@@ -133,7 +133,7 @@ void (async () => {
     axiosGet,
     TE.chainEitherKW(notificationCodec.decode),
     TE.map(({ object }) => object.id),
-    TE.map((evaluationUrl) => logUri('Step 1: retrieved evaluation uri', item, debug)(evaluationUrl)),
+    TE.map(logUri('Step 1: retrieved evaluation uri', item, debug)),
   );
 
   const retrieveSignpostingDocmapUriFromAnnouncementActionUri = (
