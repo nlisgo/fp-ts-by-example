@@ -10,6 +10,7 @@ import { log, logError, toError } from './utils/log';
 void (async () => {
   enum DebugLevelValues {
     BASIC,
+    COAR_NOTIFICATION,
     EVALUATION_HEADERS,
     DOCMAP_ESSENTIALS_ONLY,
     DOCMAP_COMPLETE,
@@ -29,41 +30,41 @@ void (async () => {
     }
   };
 
-  const notificationCodec = t.strict({
-    object: t.strict({
+  const notificationCodec = t.type({
+    object: t.type({
       id: t.string,
     }),
   });
 
-  const headersLinkCodec = t.strict({
+  const headersLinkCodec = t.type({
     link: t.string,
   });
 
-  const parsedHeadersLinkCodec = t.strict({
-    describedby: t.strict({
+  const parsedHeadersLinkCodec = t.type({
+    describedby: t.type({
       url: t.string,
       type: t.literal('application/ld+json'),
     }),
   });
 
   const stepCodec = t.intersection([
-    t.strict({
+    t.type({
       inputs: t.readonlyArray(
-        t.strict({
+        t.type({
           doi: t.string,
         }),
       ),
       actions: t.readonlyArray(
-        t.strict({
+        t.type({
           outputs: t.readonlyArray(
-            t.strict({
+            t.type({
               published: t.string,
               doi: t.string,
               type: t.string,
             }),
           ),
           inputs: t.readonlyArray(
-            t.strict({
+            t.type({
               doi: t.string,
             }),
           ),
@@ -78,10 +79,10 @@ void (async () => {
 
   const stepsCodec = t.record(t.string, stepCodec);
 
-  const docmapCodec = t.strict({
+  const docmapCodec = t.type({
     type: t.literal('docmap'),
     id: t.string,
-    publisher: t.strict({
+    publisher: t.type({
       name: t.string,
       url: t.string,
     }),
@@ -134,6 +135,9 @@ void (async () => {
     logUri('Retrieve DocMap uri from notification', item, debug),
     axiosGet,
     TE.chainEitherKW(notificationCodec.decode),
+    TE.tapIO((decodedNotification) => () => {
+      debugLog(`COAR notification: ${jsonStringify(decodedNotification)}`, debug, DebugLevelValues.COAR_NOTIFICATION, item);
+    }),
     TE.map(({ object }) => object.id),
     TE.map(logUri('Step 1: retrieved evaluation uri', item, debug)),
   );
@@ -224,9 +228,15 @@ void (async () => {
   await retrieveDocmapsFromCoarNotificationUris([
     {
       uuid: 'bf3513ee-1fef-4f30-a61b-20721b505f11',
+      debug: [
+        DebugLevelValues.COAR_NOTIFICATION,
+      ],
     },
     {
       uuid: '9154949f-6da4-4f16-8997-a0762f19b05a',
+      debug: [
+        DebugLevelValues.DOCMAP_COMPLETE,
+      ],
     },
     {
       uuid: '7140557f-6fe6-458f-ad59-21a9d53c8eb2',
