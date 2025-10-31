@@ -95,8 +95,6 @@ void (async () => {
 
   const docmapsCodec = t.readonlyArray(docmapCodec);
 
-  const toError = (reason: unknown) => new Error(reason instanceof Error ? reason.message : String(reason));
-
   const normaliseLinkHeader = (raw: string) => pipe(
     raw
       .replace(/>\s*;\s*/g, '>; ')
@@ -107,6 +105,8 @@ void (async () => {
       .map(parseLinkHeader),
     RA.filter((l): l is NonNullable<typeof l> => l !== null),
   );
+
+  const toError = (reason: unknown) => new Error(reason instanceof Error ? reason.message : String(reason));
 
   const axiosGet = (uri: string) => TE.tryCatch(async () => axios.get<unknown>(uri), toError);
 
