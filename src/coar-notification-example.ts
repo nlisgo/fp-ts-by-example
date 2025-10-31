@@ -6,7 +6,7 @@ import * as TE from 'fp-ts/TaskEither';
 import { pipe } from 'fp-ts/function';
 import * as t from 'io-ts';
 import parseLinkHeader from 'parse-link-header';
-import { log, logError } from './utils/log';
+import { log, logError, toError } from './utils/log';
 
 void (async () => {
   enum DebugLevelValues {
@@ -106,8 +106,6 @@ void (async () => {
     RA.filter((link): link is NonNullable<typeof link> => link !== null),
   );
 
-  const toError = (reason: unknown) => new Error(reason instanceof Error ? reason.message : String(reason));
-
   const axiosGet = (uri: string) => pipe(
     TE.tryCatch(async () => axios.get<JSON>(uri), toError),
     TE.map(({ data }) => data),
@@ -198,7 +196,6 @@ void (async () => {
       retrieveDocmapFromCoarNotificationUri(item, debug),
       TE.map(logDocmap(DebugLevelValues.DOCMAP_ESSENTIALS_ONLY, false)),
       TE.map(logDocmap(DebugLevelValues.DOCMAP_COMPLETE)),
-      TE.mapLeft(toError),
       TE.mapLeft(logError(`Error retrieving docmap for item ${item}`)),
     )();
   };
