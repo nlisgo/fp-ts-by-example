@@ -108,7 +108,10 @@ void (async () => {
 
   const toError = (reason: unknown) => new Error(reason instanceof Error ? reason.message : String(reason));
 
-  const axiosGet = (uri: string) => TE.tryCatch(async () => axios.get<JSON>(uri), toError);
+  const axiosGet = (uri: string) => pipe(
+    TE.tryCatch(async () => axios.get<JSON>(uri), toError),
+    TE.map(({ data }) => data),
+  );
 
   const axiosHead = (uri: string) => TE.tryCatch(async () => axios.head(uri), toError);
 
@@ -124,7 +127,6 @@ void (async () => {
     uri,
     logUri('Retrieve DocMap uri from notification', item, debug),
     axiosGet,
-    TE.map(({ data }) => data),
     TE.chainEitherKW(notificationCodec.decode),
     TE.map(({ object }) => object.id),
     TE.map((evaluationUrl) => logUri('Step 1: retrieved evaluation uri', item, debug)(evaluationUrl)),
@@ -154,7 +156,6 @@ void (async () => {
   const retrieveDocmapFromSignpostingDocmapUri = (uri: string) => pipe(
     uri,
     axiosGet,
-    TE.map(({ data }) => data),
     TE.chainEitherKW(docmapsCodec.decode),
     TE.map(RA.head),
     TE.chainW(TE.fromOption(() => new Error('DocMaps array is empty'))),
@@ -166,8 +167,8 @@ void (async () => {
   ) => (uri: string) => pipe(
     uri,
     retrieveAnnouncementActionUriFromCoarNotificationUri(item, debug),
-    TE.chainW(retrieveSignpostingDocmapUriFromAnnouncementActionUri(item, debug)),
-    TE.chainW(retrieveDocmapFromSignpostingDocmapUri),
+    TE.chain(retrieveSignpostingDocmapUriFromAnnouncementActionUri(item, debug)),
+    TE.chain(retrieveDocmapFromSignpostingDocmapUri),
   );
 
   const retrieveDocmapFromCoarNotificationUriAndLog = async (
