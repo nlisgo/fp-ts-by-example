@@ -107,11 +107,17 @@ void (async () => {
   );
 
   const axiosGet = (uri: string) => pipe(
-    TE.tryCatch(async () => axios.get<JSON>(uri), toError),
+    TE.tryCatch(
+      async () => axios.get<JSON>(uri),
+      toError,
+    ),
     TE.map(({ data }) => data),
   );
 
-  const axiosHead = (uri: string) => TE.tryCatch(async () => axios.head(uri), toError);
+  const axiosHead = (uri: string) => TE.tryCatch(
+    async () => axios.head(uri),
+    toError,
+  );
 
   const logUri = (message: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (uri: string) => {
     debugLog(`${message}: ${uri}`, debug, DebugLevelValues.BASIC, item);
@@ -136,7 +142,8 @@ void (async () => {
   ) => (uri: string) => pipe(
     uri,
     axiosHead,
-    TE.chainEitherKW(({ headers }) => headersLinkCodec.decode(headers)),
+    TE.map(({ headers }) => headers),
+    TE.chainEitherKW(headersLinkCodec.decode),
     TE.map((decodedHeaders) => {
       debugLog(`Evaluation uri headers: ${jsonStringify(decodedHeaders)}`, debug, DebugLevelValues.EVALUATION_HEADERS, item);
       return decodedHeaders;
