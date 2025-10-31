@@ -108,7 +108,7 @@ void (async () => {
 
   const toError = (reason: unknown) => new Error(reason instanceof Error ? reason.message : String(reason));
 
-  const axiosGet = (uri: string) => TE.tryCatch(async () => axios.get<unknown>(uri), toError);
+  const axiosGet = (uri: string) => TE.tryCatch(async () => axios.get<JSON>(uri), toError);
 
   const axiosHead = (uri: string) => TE.tryCatch(async () => axios.head(uri), toError);
 
@@ -124,7 +124,8 @@ void (async () => {
     uri,
     logUri('Retrieve DocMap uri from notification', item, debug),
     axiosGet,
-    TE.chainEitherKW(({ data }) => notificationCodec.decode(data)),
+    TE.map(({ data }) => data),
+    TE.chainEitherKW(notificationCodec.decode),
     TE.map(({ object }) => object.id),
     TE.map((evaluationUrl) => logUri('Step 1: retrieved evaluation uri', item, debug)(evaluationUrl)),
   );
