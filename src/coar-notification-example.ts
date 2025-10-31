@@ -1,5 +1,4 @@
 import axios from 'axios';
-import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as TE from 'fp-ts/TaskEither';
@@ -114,9 +113,12 @@ void (async () => {
     TE.map(({ data }) => data),
   );
 
-  const axiosHead = (uri: string) => TE.tryCatch(
-    async () => axios.head(uri),
-    toError,
+  const axiosHead = (uri: string) => pipe(
+    TE.tryCatch(
+      async () => axios.head(uri),
+      toError,
+    ),
+    TE.map(({ headers }) => headers),
   );
 
   const logUri = (message: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (uri: string) => {
@@ -142,7 +144,6 @@ void (async () => {
   ) => (uri: string) => pipe(
     uri,
     axiosHead,
-    TE.map(({ headers }) => headers),
     TE.chainEitherKW(headersLinkCodec.decode),
     TE.tapIO((decodedHeaders) => () => {
       debugLog(`Evaluation uri headers: ${jsonStringify(decodedHeaders)}`, debug, DebugLevelValues.EVALUATION_HEADERS, item);
