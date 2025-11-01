@@ -36,7 +36,7 @@ void (async () => {
 
   type LogEntries = Array<LogEntry>;
 
-  type DebugLog = (prefix: string, debugLevel: DebugLevel) => <A>(data: A) => IO.IO<void>;
+  type DebugLog = (prefix: string, debugLevel?: DebugLevel) => <A>(data: A) => IO.IO<void>;
 
   const outputLogEntry = (entry: LogEntry) => {
     const formattedData = typeof entry.data === 'string' ? entry.data : jsonStringify(entry.data);
@@ -48,12 +48,18 @@ void (async () => {
     item: Item,
     debugLevels: DebugLevels = [],
     outputImmediately: boolean = false,
-  ) => (prefix: string, debugLevel: DebugLevel) => <A>(data: A): IO.IO<void> => () => {
-    if (debugLevels.includes(debugLevel)) {
+  ) => (prefix: string, debugLevel?: DebugLevel) => <A>(data: A): IO.IO<void> => () => {
+    const isDebugLevel = (
+      value: string,
+    ): value is DebugLevel => Object.values(debugLevelValues).includes(value as DebugLevel);
+
+    const level: DebugLevel = debugLevel ?? (isDebugLevel(prefix) ? prefix : debugLevelValues.BASIC);
+
+    if (debugLevels.includes(level)) {
       const entry: LogEntry = {
         prefix,
         item,
-        debugLevel,
+        debugLevel: level,
         data,
       };
 
@@ -168,9 +174,9 @@ void (async () => {
     TE.of(uri),
     TE.tapIO(debugLog('Retrieve DocMap uri from notification', debugLevelValues.BASIC)),
     TE.chain(
-      axiosGet(notificationCodec, debugLog(debugLevelValues.COAR_NOTIFICATION, debugLevelValues.COAR_NOTIFICATION)),
+      axiosGet(notificationCodec, debugLog(debugLevelValues.COAR_NOTIFICATION)),
     ),
-    TE.tapIO(debugLog(debugLevelValues.COAR_NOTIFICATION_ESSENTIALS, debugLevelValues.COAR_NOTIFICATION_ESSENTIALS)),
+    TE.tapIO(debugLog(debugLevelValues.COAR_NOTIFICATION_ESSENTIALS)),
     TE.map(({ object }) => object.id),
     TE.tapIO(debugLog('Step 1: retrieved evaluation uri', debugLevelValues.BASIC)),
   );
@@ -179,8 +185,8 @@ void (async () => {
     debugLog: DebugLog,
   ) => (uri: string) => pipe(
     uri,
-    axiosHead(headersLinkCodec, debugLog(debugLevelValues.EVALUATION_HEADERS, debugLevelValues.EVALUATION_HEADERS)),
-    TE.tapIO(debugLog(debugLevelValues.EVALUATION_HEADERS_ESSENTIALS, debugLevelValues.EVALUATION_HEADERS_ESSENTIALS)),
+    axiosHead(headersLinkCodec, debugLog(debugLevelValues.EVALUATION_HEADERS)),
+    TE.tapIO(debugLog(debugLevelValues.EVALUATION_HEADERS_ESSENTIALS)),
     TE.map(({ link }) => link),
     TE.map(normaliseLinkHeader),
     TE.map(RA.map(parsedHeadersLinkCodec.decode)),
@@ -195,8 +201,8 @@ void (async () => {
     debugLog: DebugLog,
   ) => (uri: string) => pipe(
     uri,
-    axiosGet(docmapsCodec, debugLog(debugLevelValues.DOCMAP, debugLevelValues.DOCMAP)),
-    TE.tapIO(debugLog(debugLevelValues.DOCMAP_ESSENTIALS, debugLevelValues.DOCMAP_ESSENTIALS)),
+    axiosGet(docmapsCodec, debugLog(debugLevelValues.DOCMAP)),
+    TE.tapIO(debugLog(debugLevelValues.DOCMAP_ESSENTIALS)),
     TE.map(RA.head),
     TE.chainW(TE.fromOption(() => new Error('DocMaps array is empty'))),
   );
