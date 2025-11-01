@@ -1,4 +1,5 @@
 import axios from 'axios';
+import * as IO from 'fp-ts/IO';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as TE from 'fp-ts/TaskEither';
@@ -42,9 +43,9 @@ void (async () => {
     });
   };
 
-  const outputCollectedLogs = (debugLevels: DebugLevels) => {
+  const outputCollectedLogs = (item: Item, debugLevels: DebugLevels) => {
     collectedLogs
-      .filter((entry) => debugLevels.includes(entry.debugLevel))
+      .filter((entry) => item === entry.item && debugLevels.includes(entry.debugLevel))
       .forEach((entry) => {
         const formattedData = typeof entry.data === 'string' ? entry.data : jsonStringify(entry.data);
         log(`${entry.prefix}: ${formattedData}`)(`(Debug level: ${entry.debugLevel}) [item: ${entry.item}]`);
@@ -197,7 +198,10 @@ void (async () => {
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => {
-    const logDocmap = (debugLevel: DebugLevel, complete: boolean = true) => (docmap: t.TypeOf<typeof docmapCodec>) => {
+    const logDocmap = (
+      debugLevel: DebugLevel,
+      complete: boolean = true,
+    ) => (docmap: t.TypeOf<typeof docmapCodec>): IO.IO<void> => () => {
       debugLog('DocMap', item, debugLevel)(complete ? docmap : pipe(
         docmap.steps,
         (steps) => Object.entries(steps).map(([k, v]) => ({
@@ -216,11 +220,11 @@ void (async () => {
     return pipe(
       uri,
       retrieveDocmapFromCoarNotificationUri(item),
-      TE.tapIO((docmap) => () => logDocmap(DebugLevelValues.DOCMAP_ESSENTIALS_ONLY, false)(docmap)),
-      TE.tapIO((docmap) => () => logDocmap(DebugLevelValues.DOCMAP_COMPLETE)(docmap)),
+      TE.tapIO(logDocmap(DebugLevelValues.DOCMAP_ESSENTIALS_ONLY, false)),
+      TE.tapIO(logDocmap(DebugLevelValues.DOCMAP_COMPLETE)),
       TE.tapIO(() => () => {
         log('Debug', item)(`Levels: ${debug.join(', ')}`);
-        outputCollectedLogs(debug);
+        outputCollectedLogs(item, debug);
       }),
       TE.mapLeft(logError(`Error retrieving docmap for item ${item}`)),
     )();
