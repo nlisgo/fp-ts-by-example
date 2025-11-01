@@ -130,22 +130,16 @@ void (async () => {
     (res) => res.headers,
   );
 
-  const logUri = (
-    message: string,
-    item: Item,
-    debug: DebugLevels = [DebugLevelValues.BASIC],
-  ) => (uri: string) => debugLog(message, debug, DebugLevelValues.BASIC, item)(uri);
-
   const retrieveAnnouncementActionUriFromCoarNotificationUri = (
     item: Item,
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => (uri: string) => pipe(
     uri,
-    logUri('Retrieve DocMap uri from notification', item, debug),
+    debugLog('Retrieve DocMap uri from notification', debug, DebugLevelValues.BASIC, item),
     axiosGet(notificationCodec),
     TE.map(debugLog('COAR notification', debug, DebugLevelValues.COAR_NOTIFICATION, item)),
     TE.map(({ object }) => object.id),
-    TE.map(logUri('Step 1: retrieved evaluation uri', item, debug)),
+    TE.map(debugLog('Step 1: retrieved evaluation uri', debug, DebugLevelValues.BASIC, item)),
   );
 
   const retrieveSignpostingDocmapUriFromAnnouncementActionUri = (
@@ -162,7 +156,7 @@ void (async () => {
     TE.map(RA.last),
     TE.chainW(TE.fromOption(() => new Error('Header links array is empty'))),
     TE.map(({ describedby }) => describedby.url),
-    TE.map(logUri('Step 2: retrieved DocMap uri', item, debug)),
+    TE.map(debugLog('Step 2: retrieved DocMap uri', debug, DebugLevelValues.BASIC, item)),
   );
 
   const retrieveDocmapFromSignpostingDocmapUri = (uri: string) => pipe(
