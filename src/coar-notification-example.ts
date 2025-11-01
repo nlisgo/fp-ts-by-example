@@ -106,20 +106,22 @@ void (async () => {
     RA.filter((link): link is NonNullable<typeof link> => link !== null),
   );
 
-  const axiosGet = (uri: string) => pipe(
+  const axiosGet = <A>(codec: t.Type<A>) => (uri: string) => pipe(
     TE.tryCatch(
       async () => axios.get<JSON>(uri),
       toError,
     ),
     TE.map(({ data }) => data),
+    TE.chainEitherKW(codec.decode),
   );
 
-  const axiosHead = (uri: string) => pipe(
+  const axiosHead = <A>(codec: t.Type<A>) => (uri: string) => pipe(
     TE.tryCatch(
-      async () => axios.head(uri),
+      async () => axios.head<JSON>(uri),
       toError,
     ),
     TE.map(({ headers }) => headers),
+    TE.chainEitherKW(codec.decode),
   );
 
   const logUri = (message: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (uri: string) => {
@@ -133,8 +135,7 @@ void (async () => {
   ) => (uri: string) => pipe(
     uri,
     logUri('Retrieve DocMap uri from notification', item, debug),
-    axiosGet,
-    TE.chainEitherKW(notificationCodec.decode),
+    axiosGet(notificationCodec),
     TE.tapIO((decodedNotification) => () => {
       debugLog(`COAR notification: ${jsonStringify(decodedNotification)}`, debug, DebugLevelValues.COAR_NOTIFICATION, item);
     }),
@@ -147,8 +148,7 @@ void (async () => {
     debug: DebugLevels = [DebugLevelValues.BASIC],
   ) => (uri: string) => pipe(
     uri,
-    axiosHead,
-    TE.chainEitherKW(headersLinkCodec.decode),
+    axiosHead(headersLinkCodec),
     TE.tapIO((decodedHeaders) => () => {
       debugLog(`Evaluation uri headers: ${jsonStringify(decodedHeaders)}`, debug, DebugLevelValues.EVALUATION_HEADERS, item);
     }),
@@ -164,8 +164,7 @@ void (async () => {
 
   const retrieveDocmapFromSignpostingDocmapUri = (uri: string) => pipe(
     uri,
-    axiosGet,
-    TE.chainEitherKW(docmapsCodec.decode),
+    axiosGet(docmapsCodec),
     TE.map(RA.head),
     TE.chainW(TE.fromOption(() => new Error('DocMaps array is empty'))),
   );
@@ -228,9 +227,15 @@ void (async () => {
   await retrieveDocmapsFromCoarNotificationUris([
     {
       uuid: 'bf3513ee-1fef-4f30-a61b-20721b505f11',
+      debug: [
+        DebugLevelValues.COAR_NOTIFICATION,
+      ],
     },
     {
       uuid: '9154949f-6da4-4f16-8997-a0762f19b05a',
+      debug: [
+        DebugLevelValues.DOCMAP_ESSENTIALS_ONLY,
+      ],
     },
     {
       uuid: '7140557f-6fe6-458f-ad59-21a9d53c8eb2',
