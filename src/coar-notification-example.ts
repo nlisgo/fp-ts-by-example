@@ -32,24 +32,33 @@ void (async () => {
     data: unknown,
   };
 
-  const collectedLogs: Array<LogEntry> = [];
+  type DebugLog = (prefix: string, debugLevel: DebugLevel) => <A>(data: A) => IO.IO<void>;
 
-  const debugLog = (prefix: string, item: Item, debugLevel: DebugLevel) => <A>(data: A): IO.IO<void> => () => {
-    collectedLogs.push({
-      prefix,
-      item,
-      debugLevel,
-      data,
-    });
+  const outputLogEntry = (entry: LogEntry) => {
+    const formattedData = typeof entry.data === 'string' ? entry.data : jsonStringify(entry.data);
+    log(`${entry.prefix}: ${formattedData}`)(`(Debug level: ${entry.debugLevel}) [item: ${entry.item}]`);
   };
 
-  const outputCollectedLogs = (item: Item, debugLevels: DebugLevels) => {
-    collectedLogs
-      .filter((entry) => item === entry.item && debugLevels.includes(entry.debugLevel))
-      .forEach((entry) => {
-        const formattedData = typeof entry.data === 'string' ? entry.data : jsonStringify(entry.data);
-        log(`${entry.prefix}: ${formattedData}`)(`(Debug level: ${entry.debugLevel}) [item: ${entry.item}]`);
-      });
+  const createDebugLog = (
+    store: Array<LogEntry>,
+    item: Item,
+    debugLevels: DebugLevels = [],
+    outputImmediately: boolean = false,
+  ) => (prefix: string, debugLevel: DebugLevel) => <A>(data: A): IO.IO<void> => () => {
+    if (debugLevels.includes(debugLevel)) {
+      const entry: LogEntry = {
+        prefix,
+        item,
+        debugLevel,
+        data,
+      };
+
+      if (outputImmediately) {
+        outputLogEntry(entry);
+      }
+
+      store.push(entry);
+    }
   };
 
   const notificationCodec = t.type({
@@ -151,22 +160,22 @@ void (async () => {
   );
 
   const retrieveAnnouncementActionUriFromCoarNotificationUri = (
-    item: Item,
+    debugLog: DebugLog,
   ) => (uri: string) => pipe(
     uri,
     axiosGet(notificationCodec),
-    TE.tapIO(debugLog('Retrieve DocMap uri from notification', item, DebugLevelValues.BASIC)),
-    TE.tapIO(debugLog('COAR notification', item, DebugLevelValues.COAR_NOTIFICATION)),
+    TE.tapIO(() => () => debugLog('Retrieve DocMap uri from notification', DebugLevelValues.BASIC)(uri)),
+    TE.tapIO(debugLog('COAR notification', DebugLevelValues.COAR_NOTIFICATION)),
     TE.map(({ object }) => object.id),
-    TE.tapIO(debugLog('Step 1: retrieved evaluation uri', item, DebugLevelValues.BASIC)),
+    TE.tapIO(debugLog('Step 1: retrieved evaluation uri', DebugLevelValues.BASIC)),
   );
 
   const retrieveSignpostingDocmapUriFromAnnouncementActionUri = (
-    item: Item,
+    debugLog: DebugLog,
   ) => (uri: string) => pipe(
     uri,
     axiosHead(headersLinkCodec),
-    TE.tapIO(debugLog('Evaluation uri headers', item, DebugLevelValues.EVALUATION_HEADERS)),
+    TE.tapIO(debugLog('Evaluation uri headers', DebugLevelValues.EVALUATION_HEADERS)),
     TE.map(({ link }) => link),
     TE.map(normaliseLinkHeader),
     TE.map(RA.map(parsedHeadersLinkCodec.decode)),
@@ -174,7 +183,7 @@ void (async () => {
     TE.map(RA.last),
     TE.chainW(TE.fromOption(() => new Error('Header links array is empty'))),
     TE.map(({ describedby }) => describedby.url),
-    TE.tapIO(debugLog('Step 2: retrieved DocMap uri', item, DebugLevelValues.BASIC)),
+    TE.tapIO(debugLog('Step 2: retrieved DocMap uri', DebugLevelValues.BASIC)),
   );
 
   const retrieveDocmapFromSignpostingDocmapUri = (uri: string) => pipe(
@@ -185,24 +194,35 @@ void (async () => {
   );
 
   const retrieveDocmapFromCoarNotificationUri = (
-    item: Item,
+    debugLog: DebugLog,
   ) => (uri: string) => pipe(
     uri,
-    retrieveAnnouncementActionUriFromCoarNotificationUri(item),
-    TE.chain(retrieveSignpostingDocmapUriFromAnnouncementActionUri(item)),
+    retrieveAnnouncementActionUriFromCoarNotificationUri(debugLog),
+    TE.chain(retrieveSignpostingDocmapUriFromAnnouncementActionUri(debugLog)),
     TE.chain(retrieveDocmapFromSignpostingDocmapUri),
   );
 
   const retrieveDocmapFromCoarNotificationUriAndLog = async (
     uri: string,
     item: Item,
-    debug: DebugLevels = [DebugLevelValues.BASIC],
+    debugLevels: DebugLevels = [DebugLevelValues.BASIC],
   ) => {
+    const logs: Array<LogEntry> = [];
+    const debugLog = createDebugLog(
+      logs,
+      item,
+      [
+        ...(debugLevels.length > 0 && !debugLevels.includes(DebugLevelValues.BASIC) ? [DebugLevelValues.BASIC] : []),
+        ...debugLevels,
+      ],
+      true,
+    );
+
     const logDocmap = (
       debugLevel: DebugLevel,
       complete: boolean = true,
     ) => (docmap: t.TypeOf<typeof docmapCodec>): IO.IO<void> => () => {
-      debugLog('DocMap', item, debugLevel)(complete ? docmap : pipe(
+      debugLog('DocMap', debugLevel)(complete ? docmap : pipe(
         docmap.steps,
         (steps) => Object.entries(steps).map(([k, v]) => ({
           step: k,
@@ -219,13 +239,9 @@ void (async () => {
 
     return pipe(
       uri,
-      retrieveDocmapFromCoarNotificationUri(item),
+      retrieveDocmapFromCoarNotificationUri(debugLog),
       TE.tapIO(logDocmap(DebugLevelValues.DOCMAP_ESSENTIALS_ONLY, false)),
       TE.tapIO(logDocmap(DebugLevelValues.DOCMAP_COMPLETE)),
-      TE.tapIO(() => () => {
-        log('Debug', item)(`Levels: ${debug.join(', ')}`);
-        outputCollectedLogs(item, debug);
-      }),
       TE.mapLeft(logError(`Error retrieving docmap for item ${item}`)),
     )();
   };
@@ -234,13 +250,11 @@ void (async () => {
     configs: ReadonlyArray<{ uuid: string, debug?: DebugLevels }>,
   ) => Promise.all(
     configs.map(async (
-      { uuid, debug = [DebugLevelValues.BASIC] },
+      { uuid, debug: debugLevels = [DebugLevelValues.BASIC] },
     ) => retrieveDocmapFromCoarNotificationUriAndLog(
       `https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:${uuid}`,
       uuid,
-      (debug.length > 0 && !debug.includes(DebugLevelValues.BASIC))
-        ? [DebugLevelValues.BASIC, ...debug]
-        : debug,
+      debugLevels,
     )),
   );
 
