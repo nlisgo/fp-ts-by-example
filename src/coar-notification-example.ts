@@ -162,9 +162,9 @@ void (async () => {
   const retrieveAnnouncementActionUriFromCoarNotificationUri = (
     debugLog: DebugLog,
   ) => (uri: string) => pipe(
-    uri,
-    axiosGet(notificationCodec),
-    TE.tapIO(() => () => debugLog('Retrieve DocMap uri from notification', DebugLevelValues.BASIC)(uri)),
+    TE.of(uri),
+    TE.tapIO(debugLog('Retrieve DocMap uri from notification', DebugLevelValues.BASIC)),
+    TE.chain(axiosGet(notificationCodec)),
     TE.tapIO(debugLog('COAR notification', DebugLevelValues.COAR_NOTIFICATION)),
     TE.map(({ object }) => object.id),
     TE.tapIO(debugLog('Step 1: retrieved evaluation uri', DebugLevelValues.BASIC)),
