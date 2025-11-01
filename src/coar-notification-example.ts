@@ -24,10 +24,12 @@ void (async () => {
 
   const jsonStringify = (data: unknown) => JSON.stringify(data, null, 2);
 
-  const debugLog = (message: string, debug: DebugLevels, debugLevel: DebugLevel, item: Item) => {
+  const debugLog = (prefix: string, debug: DebugLevels, debugLevel: DebugLevel, item: Item) => <A>(data: A) => {
     if (debug.includes(debugLevel)) {
-      return log(message)(`(Debug level: ${debugLevel}) [item: ${item}]`);
+      log(`${prefix}: ${typeof data === 'string' ? data : jsonStringify(data)}`)(`(Debug level: ${debugLevel}) [item: ${item}]`);
     }
+
+    return data;
   };
 
   const notificationCodec = t.type({
@@ -128,10 +130,11 @@ void (async () => {
     (res) => res.headers,
   );
 
-  const logUri = (message: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (uri: string) => {
-    debugLog(`${message}: ${uri}`, debug, DebugLevelValues.BASIC, item);
-    return uri;
-  };
+  const logUri = (
+    message: string,
+    item: Item,
+    debug: DebugLevels = [DebugLevelValues.BASIC],
+  ) => (uri: string) => debugLog(message, debug, DebugLevelValues.BASIC, item)(uri);
 
   const retrieveAnnouncementActionUriFromCoarNotificationUri = (
     item: Item,
@@ -140,9 +143,7 @@ void (async () => {
     uri,
     logUri('Retrieve DocMap uri from notification', item, debug),
     axiosGet(notificationCodec),
-    TE.tapIO((decodedNotification) => () => {
-      debugLog(`COAR notification: ${jsonStringify(decodedNotification)}`, debug, DebugLevelValues.COAR_NOTIFICATION, item);
-    }),
+    TE.map(debugLog('COAR notification', debug, DebugLevelValues.COAR_NOTIFICATION, item)),
     TE.map(({ object }) => object.id),
     TE.map(logUri('Step 1: retrieved evaluation uri', item, debug)),
   );
@@ -153,9 +154,7 @@ void (async () => {
   ) => (uri: string) => pipe(
     uri,
     axiosHead(headersLinkCodec),
-    TE.tapIO((decodedHeaders) => () => {
-      debugLog(`Evaluation uri headers: ${jsonStringify(decodedHeaders)}`, debug, DebugLevelValues.EVALUATION_HEADERS, item);
-    }),
+    TE.map(debugLog('Evaluation uri headers', debug, DebugLevelValues.EVALUATION_HEADERS, item)),
     TE.map(({ link }) => link),
     TE.map(normaliseLinkHeader),
     TE.map(RA.map(parsedHeadersLinkCodec.decode)),
