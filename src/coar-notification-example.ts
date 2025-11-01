@@ -12,11 +12,11 @@ void (async () => {
   const debugLevelValues = {
     BASIC: 'Basic',
     COAR_NOTIFICATION: 'COAR notification',
-    COAR_NOTIFICATION_ESSENTIALS: 'COAR notification essentials',
+    COAR_NOTIFICATION_ESSENTIALS: 'COAR notification (essentials)',
     EVALUATION_HEADERS: 'Evaluation headers',
-    EVALUATION_HEADERS_ESSENTIALS: 'Evaluation headers',
-    DOCMAP_ESSENTIALS: 'DocMap essentials',
+    EVALUATION_HEADERS_ESSENTIALS: 'Evaluation headers (essentials)',
     DOCMAP: 'DocMap',
+    DOCMAP_ESSENTIALS: 'DocMap (essentials)',
   } as const;
 
   type DebugLevel = typeof debugLevelValues[keyof typeof debugLevelValues];
@@ -142,17 +142,13 @@ void (async () => {
   const axiosRequest = <R>(
     request: (uri: string) => Promise<R>,
     extract: (response: R) => unknown,
-  ) => <A>(codec: t.Type<A>, debugLog?: DebugLog, debugLogArgs?: [string, DebugLevel]) => (uri: string) => pipe(
+  ) => <A>(codec: t.Type<A>, debugLog: <B>(data: B) => IO.IO<void>) => (uri: string) => pipe(
       TE.tryCatch(
         async () => request(uri),
         toError,
       ),
       TE.map(extract),
-      TE.tapIO((d) => () => {
-        if (debugLog && debugLogArgs) {
-          debugLog(...debugLogArgs)(d)();
-        }
-      }),
+      TE.tapIO(debugLog),
       TE.chainEitherKW(codec.decode),
     );
 
@@ -171,8 +167,10 @@ void (async () => {
   ) => (uri: string) => pipe(
     TE.of(uri),
     TE.tapIO(debugLog('Retrieve DocMap uri from notification', debugLevelValues.BASIC)),
-    TE.chain(axiosGet(notificationCodec, debugLog, ['COAR notification', debugLevelValues.COAR_NOTIFICATION])),
-    TE.tapIO(debugLog('COAR notification', debugLevelValues.COAR_NOTIFICATION_ESSENTIALS)),
+    TE.chain(
+      axiosGet(notificationCodec, debugLog(debugLevelValues.COAR_NOTIFICATION, debugLevelValues.COAR_NOTIFICATION)),
+    ),
+    TE.tapIO(debugLog(debugLevelValues.COAR_NOTIFICATION_ESSENTIALS, debugLevelValues.COAR_NOTIFICATION_ESSENTIALS)),
     TE.map(({ object }) => object.id),
     TE.tapIO(debugLog('Step 1: retrieved evaluation uri', debugLevelValues.BASIC)),
   );
@@ -181,8 +179,8 @@ void (async () => {
     debugLog: DebugLog,
   ) => (uri: string) => pipe(
     uri,
-    axiosHead(headersLinkCodec, debugLog, ['Evaluation uri headers', debugLevelValues.EVALUATION_HEADERS]),
-    TE.tapIO(debugLog('Evaluation uri headers', debugLevelValues.EVALUATION_HEADERS_ESSENTIALS)),
+    axiosHead(headersLinkCodec, debugLog(debugLevelValues.EVALUATION_HEADERS, debugLevelValues.EVALUATION_HEADERS)),
+    TE.tapIO(debugLog(debugLevelValues.EVALUATION_HEADERS_ESSENTIALS, debugLevelValues.EVALUATION_HEADERS_ESSENTIALS)),
     TE.map(({ link }) => link),
     TE.map(normaliseLinkHeader),
     TE.map(RA.map(parsedHeadersLinkCodec.decode)),
@@ -197,8 +195,8 @@ void (async () => {
     debugLog: DebugLog,
   ) => (uri: string) => pipe(
     uri,
-    axiosGet(docmapsCodec, debugLog, ['Docmap', debugLevelValues.DOCMAP]),
-    TE.tapIO(debugLog('DocMap', debugLevelValues.DOCMAP_ESSENTIALS)),
+    axiosGet(docmapsCodec, debugLog(debugLevelValues.DOCMAP, debugLevelValues.DOCMAP)),
+    TE.tapIO(debugLog(debugLevelValues.DOCMAP_ESSENTIALS, debugLevelValues.DOCMAP_ESSENTIALS)),
     TE.map(RA.head),
     TE.chainW(TE.fromOption(() => new Error('DocMaps array is empty'))),
   );
