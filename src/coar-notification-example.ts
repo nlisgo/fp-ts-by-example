@@ -106,22 +106,26 @@ void (async () => {
     RA.filter((link): link is NonNullable<typeof link> => link !== null),
   );
 
-  const axiosGet = <A>(codec: t.Type<A>) => (uri: string) => pipe(
-    TE.tryCatch(
-      async () => axios.get<JSON>(uri),
-      toError,
-    ),
-    TE.map(({ data }) => data),
-    TE.chainEitherKW(codec.decode),
+  const axiosRequest = <R>(
+    request: (uri: string) => Promise<R>,
+    extract: (response: R) => unknown,
+  ) => <A>(codec: t.Type<A>) => (uri: string) => pipe(
+      TE.tryCatch(
+        async () => request(uri),
+        toError,
+      ),
+      TE.map(extract),
+      TE.chainEitherKW(codec.decode),
+    );
+
+  const axiosGet = axiosRequest(
+    async (uri) => axios.get<JSON>(uri),
+    (res) => res.data,
   );
 
-  const axiosHead = <A>(codec: t.Type<A>) => (uri: string) => pipe(
-    TE.tryCatch(
-      async () => axios.head<JSON>(uri),
-      toError,
-    ),
-    TE.map(({ headers }) => headers),
-    TE.chainEitherKW(codec.decode),
+  const axiosHead = axiosRequest(
+    async (uri) => axios.head<JSON>(uri),
+    (res) => res.headers,
   );
 
   const logUri = (message: string, item: Item, debug: DebugLevels = [DebugLevelValues.BASIC]) => (uri: string) => {
