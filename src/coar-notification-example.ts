@@ -34,7 +34,7 @@ void (async () => {
 
   const collectedLogs: Array<LogEntry> = [];
 
-  const debugLog = (prefix: string, item: Item, debugLevel: DebugLevel) => <A>(data: A) => {
+  const debugLog = (prefix: string, item: Item, debugLevel: DebugLevel) => <A>(data: A): IO.IO<void> => () => {
     collectedLogs.push({
       prefix,
       item,
@@ -155,10 +155,10 @@ void (async () => {
   ) => (uri: string) => pipe(
     uri,
     axiosGet(notificationCodec),
-    TE.tapIO(() => () => debugLog('Retrieve DocMap uri from notification', item, DebugLevelValues.BASIC)(uri)),
-    TE.tapIO((d) => () => debugLog('COAR notification', item, DebugLevelValues.COAR_NOTIFICATION)(d)),
+    TE.tapIO(debugLog('Retrieve DocMap uri from notification', item, DebugLevelValues.BASIC)),
+    TE.tapIO(debugLog('COAR notification', item, DebugLevelValues.COAR_NOTIFICATION)),
     TE.map(({ object }) => object.id),
-    TE.tapIO((d) => () => debugLog('Step 1: retrieved evaluation uri', item, DebugLevelValues.BASIC)(d)),
+    TE.tapIO(debugLog('Step 1: retrieved evaluation uri', item, DebugLevelValues.BASIC)),
   );
 
   const retrieveSignpostingDocmapUriFromAnnouncementActionUri = (
@@ -166,7 +166,7 @@ void (async () => {
   ) => (uri: string) => pipe(
     uri,
     axiosHead(headersLinkCodec),
-    TE.tapIO((d) => () => debugLog('Evaluation uri headers', item, DebugLevelValues.EVALUATION_HEADERS)(d)),
+    TE.tapIO(debugLog('Evaluation uri headers', item, DebugLevelValues.EVALUATION_HEADERS)),
     TE.map(({ link }) => link),
     TE.map(normaliseLinkHeader),
     TE.map(RA.map(parsedHeadersLinkCodec.decode)),
@@ -174,7 +174,7 @@ void (async () => {
     TE.map(RA.last),
     TE.chainW(TE.fromOption(() => new Error('Header links array is empty'))),
     TE.map(({ describedby }) => describedby.url),
-    TE.tapIO((d) => () => debugLog('Step 2: retrieved DocMap uri', item, DebugLevelValues.BASIC)(d)),
+    TE.tapIO(debugLog('Step 2: retrieved DocMap uri', item, DebugLevelValues.BASIC)),
   );
 
   const retrieveDocmapFromSignpostingDocmapUri = (uri: string) => pipe(
@@ -214,7 +214,7 @@ void (async () => {
           })),
           inputs: v.inputs.map(({ doi }) => ({ doi })),
         })),
-      ));
+      ))();
     };
 
     return pipe(
