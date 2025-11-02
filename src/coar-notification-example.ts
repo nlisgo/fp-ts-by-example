@@ -173,7 +173,7 @@ void (async () => {
   ) => (uri: string) => pipe(
     TE.of(uri),
     TE.tapIO(debugLog('Retrieve DocMap uri from notification', debugLevelValues.BASIC)),
-    TE.chain(
+    TE.flatMap(
       axiosGet(notificationCodec, debugLog(debugLevelValues.COAR_NOTIFICATION)),
     ),
     TE.tapIO(debugLog(debugLevelValues.COAR_NOTIFICATION_ESSENTIALS)),
@@ -192,7 +192,7 @@ void (async () => {
     TE.map(RA.map(parsedHeadersLinkCodec.decode)),
     TE.map(RA.filterMap(O.getRight)),
     TE.map(RA.last),
-    TE.chainW(TE.fromOption(() => new Error('Header links array is empty'))),
+    TE.flatMap(TE.fromOption(() => new Error('Header links array is empty'))),
     TE.map(({ describedby }) => describedby.url),
     TE.tapIO(debugLog('Step 2: retrieved DocMap uri', debugLevelValues.BASIC)),
   );
@@ -204,16 +204,7 @@ void (async () => {
     axiosGet(docmapsCodec, debugLog(debugLevelValues.DOCMAP)),
     TE.tapIO(debugLog(debugLevelValues.DOCMAP_ESSENTIALS)),
     TE.map(RA.head),
-    TE.chainW(TE.fromOption(() => new Error('DocMaps array is empty'))),
-  );
-
-  const retrieveDocmapFromCoarNotificationUri = (
-    debugLog: DebugLog,
-  ) => (uri: string) => pipe(
-    uri,
-    retrieveAnnouncementActionUriFromCoarNotificationUri(debugLog),
-    TE.chain(retrieveSignpostingDocmapUriFromAnnouncementActionUri(debugLog)),
-    TE.chain(retrieveDocmapFromSignpostingDocmapUri(debugLog)),
+    TE.flatMap(TE.fromOption(() => new Error('DocMaps array is empty'))),
   );
 
   const retrieveDocmapFromCoarNotificationUriAndLog = async (
@@ -234,7 +225,9 @@ void (async () => {
 
     return pipe(
       uri,
-      retrieveDocmapFromCoarNotificationUri(debugLog),
+      retrieveAnnouncementActionUriFromCoarNotificationUri(debugLog),
+      TE.flatMap(retrieveSignpostingDocmapUriFromAnnouncementActionUri(debugLog)),
+      TE.flatMap(retrieveDocmapFromSignpostingDocmapUri(debugLog)),
       TE.mapLeft(logError(`Error retrieving docmap for item ${item}`)),
     )();
   };
