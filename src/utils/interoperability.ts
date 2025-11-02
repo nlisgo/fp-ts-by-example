@@ -1,7 +1,7 @@
 import * as E from 'fp-ts/Either';
-import * as IO from 'fp-ts/IO';
+import type * as IO from 'fp-ts/IO';
 import * as O from 'fp-ts/Option';
-import * as T from 'fp-ts/Task';
+import type * as T from 'fp-ts/Task';
 import * as TE from 'fp-ts/TaskEither';
 import { pipe } from 'fp-ts/function';
 

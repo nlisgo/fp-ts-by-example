@@ -1,5 +1,5 @@
 import axios from 'axios';
-import * as IO from 'fp-ts/IO';
+import type * as IO from 'fp-ts/IO';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as TE from 'fp-ts/TaskEither';
@@ -207,7 +207,7 @@ void (async () => {
     TE.flatMap(TE.fromOption(() => new Error('DocMaps array is empty'))),
   );
 
-  const retrieveDocmapFromCoarNotificationUriAndLog = async (
+  const retrieveDocmapFromCoarNotificationUri = async (
     uri: string,
     item: Item,
     debugLevels: DebugLevels = [debugLevelValues.BASIC],
@@ -237,7 +237,7 @@ void (async () => {
   ) => Promise.all(
     configs.map(async (
       { uuid, debug: debugLevels = [debugLevelValues.BASIC] },
-    ) => retrieveDocmapFromCoarNotificationUriAndLog(
+    ) => retrieveDocmapFromCoarNotificationUri(
       `https://inbox-sciety-prod.elifesciences.org/inbox/urn:uuid:${uuid}`,
       uuid,
       debugLevels,

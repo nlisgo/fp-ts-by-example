@@ -1,8 +1,8 @@
 import * as A from 'fp-ts/Array';
 import * as E from 'fp-ts/Either';
-import * as M from 'fp-ts/Monoid';
+import type * as M from 'fp-ts/Monoid';
 import * as NEA from 'fp-ts/NonEmptyArray';
-import { Semigroup } from 'fp-ts/Semigroup';
+import { type Semigroup } from 'fp-ts/Semigroup';
 import { pipe } from 'fp-ts/function';
 import * as N from 'fp-ts/number';
 import { pipeAndLog } from '../utils/log';
