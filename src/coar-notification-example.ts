@@ -164,7 +164,7 @@ void (async () => {
   );
 
   const axiosHead = axiosRequest(
-    async (uri) => axios.head<JSON>(uri),
+    async (uri) => axios.head(uri),
     ({ headers }) => headers,
   );
 
