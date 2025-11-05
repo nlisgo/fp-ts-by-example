@@ -159,22 +159,22 @@ void (async () => {
 
   const retrieveAnnouncementActionUriFromCoarNotificationUri = (
     debugLog: DebugLog,
-  ) => (uri: string) => pipe(
-    TE.of(uri),
-    TE.tapIO(debugLog('Retrieve DocMap uri from notification', debugLevelValues.BASIC)),
+  ) => (coarNotificationUri: string) => pipe(
+    TE.of(coarNotificationUri),
     TE.flatMap(
       axiosGet(notificationCodec, debugLog(debugLevelValues.COAR_NOTIFICATION)),
     ),
     TE.tapIO(debugLog(debugLevelValues.COAR_NOTIFICATION_ESSENTIALS)),
     TE.map(({ object }) => object.id),
-    TE.tapIO(debugLog('Step 1: retrieved evaluation uri', debugLevelValues.BASIC)),
   );
 
   const retrieveSignpostingDocmapUriFromAnnouncementActionUri = (
     debugLog: DebugLog,
-  ) => (uri: string) => pipe(
-    uri,
-    axiosHead(headersLinkCodec, debugLog(debugLevelValues.EVALUATION_HEADERS)),
+  ) => (announcementActionUri: string) => pipe(
+    TE.of(announcementActionUri),
+    TE.flatMap(
+      axiosHead(headersLinkCodec, debugLog(debugLevelValues.EVALUATION_HEADERS)),
+    ),
     TE.tapIO(debugLog(debugLevelValues.EVALUATION_HEADERS_ESSENTIALS)),
     TE.map(({ link }) => link),
     TE.map(LinkHeader.parse),
@@ -184,21 +184,22 @@ void (async () => {
     TE.map(RA.last),
     TE.flatMap(TE.fromOption(() => new Error('Header links array is empty'))),
     TE.map((ref) => ref.uri),
-    TE.tapIO(debugLog('Step 2: retrieved DocMap uri', debugLevelValues.BASIC)),
   );
 
   const retrieveDocmapFromSignpostingDocmapUri = (
     debugLog: DebugLog,
-  ) => (uri: string) => pipe(
-    uri,
-    axiosGet(docmapsCodec, debugLog(debugLevelValues.DOCMAP)),
+  ) => (signpostingDocmapUri: string) => pipe(
+    TE.of(signpostingDocmapUri),
+    TE.flatMap(
+      axiosGet(docmapsCodec, debugLog(debugLevelValues.DOCMAP)),
+    ),
     TE.tapIO(debugLog(debugLevelValues.DOCMAP_ESSENTIALS)),
     TE.map(RA.head),
     TE.flatMap(TE.fromOption(() => new Error('DocMaps array is empty'))),
   );
 
   const retrieveDocmapFromCoarNotificationUri = async (
-    uri: string,
+    coarNotificationUri: string,
     item: Item,
     debugLevels: DebugLevels = [debugLevelValues.BASIC],
   ) => {
@@ -214,9 +215,13 @@ void (async () => {
     );
 
     return pipe(
-      uri,
-      retrieveAnnouncementActionUriFromCoarNotificationUri(debugLog),
+      TE.of(coarNotificationUri),
+      TE.tapIO(debugLog('(1a) retrieve action announcement uri from COAR notification uri', debugLevelValues.BASIC)),
+      TE.flatMap(retrieveAnnouncementActionUriFromCoarNotificationUri(debugLog)),
+      TE.tapIO(debugLog('(1b) retrieved action announcement uri', debugLevelValues.BASIC)),
+      TE.tapIO(debugLog('(2a) retrieve signposting DocMap uri from action announcement uri', debugLevelValues.BASIC)),
       TE.flatMap(retrieveSignpostingDocmapUriFromAnnouncementActionUri(debugLog)),
+      TE.tapIO(debugLog('(2b) retrieved signposting DocMap uri', debugLevelValues.BASIC)),
       TE.flatMap(retrieveDocmapFromSignpostingDocmapUri(debugLog)),
       TE.mapLeft(logError(`Error retrieving docmap for item ${item}`)),
     )();
