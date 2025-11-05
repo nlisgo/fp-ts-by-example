@@ -4,8 +4,8 @@ import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as TE from 'fp-ts/TaskEither';
 import { pipe } from 'fp-ts/function';
+import LinkHeader from 'http-link-header';
 import * as t from 'io-ts';
-import parseLinkHeader from 'parse-link-header';
 import { log, logError, toError } from './utils/log';
 
 void (async () => {
@@ -81,11 +81,11 @@ void (async () => {
     link: t.string,
   });
 
-  const parsedHeadersLinkCodec = t.strict({
-    describedby: t.strict({
-      url: t.string,
-      type: t.literal('application/ld+json'),
-    }),
+  const signpostingDocmapLinkCodec = t.strict({
+    uri: t.string,
+    rel: t.literal('describedby'),
+    type: t.literal('application/ld+json'),
+    profile: t.literal('https://w3id.org/docmaps/context.jsonld'),
   });
 
   const stepCodec = t.intersection([
@@ -134,17 +134,6 @@ void (async () => {
 
   const docmapsCodec = t.readonlyArray(docmapCodec);
 
-  const normaliseLinkHeader = (raw: string) => pipe(
-    raw
-      .replace(/>\s*;\s*/g, '>; ')
-      .replace(/(?<!;)\s+(?=(type|profile|title|rev)=)/g, '; ')
-      .replace(/;\s*;/g, '; ')
-      .trim()
-      .split(', ')
-      .map(parseLinkHeader),
-    RA.filter((link): link is NonNullable<typeof link> => link !== null),
-  );
-
   const axiosRequest = <R>(
     request: (uri: string) => Promise<R>,
     extract: (response: R) => unknown,
@@ -188,12 +177,13 @@ void (async () => {
     axiosHead(headersLinkCodec, debugLog(debugLevelValues.EVALUATION_HEADERS)),
     TE.tapIO(debugLog(debugLevelValues.EVALUATION_HEADERS_ESSENTIALS)),
     TE.map(({ link }) => link),
-    TE.map(normaliseLinkHeader),
-    TE.map(RA.map(parsedHeadersLinkCodec.decode)),
+    TE.map(LinkHeader.parse),
+    TE.map(({ refs }) => refs),
+    TE.map(RA.map(signpostingDocmapLinkCodec.decode)),
     TE.map(RA.filterMap(O.getRight)),
     TE.map(RA.last),
     TE.flatMap(TE.fromOption(() => new Error('Header links array is empty'))),
-    TE.map(({ describedby }) => describedby.url),
+    TE.map((ref) => ref.uri),
     TE.tapIO(debugLog('Step 2: retrieved DocMap uri', debugLevelValues.BASIC)),
   );
 
