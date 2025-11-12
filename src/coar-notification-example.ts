@@ -179,9 +179,7 @@ void (async () => {
     TE.map(({ link }) => link),
     TE.map(LinkHeader.parse),
     TE.map(({ refs }) => refs),
-    TE.map(RA.map(signpostingDocmapLinkCodec.decode)),
-    TE.map(RA.filterMap(O.getRight)),
-    TE.map(RA.last),
+    TE.map(RA.findFirst(signpostingDocmapLinkCodec.is)),
     TE.flatMap(TE.fromOption(() => new Error('Header links array is empty'))),
     TE.map((ref) => ref.uri),
   );
