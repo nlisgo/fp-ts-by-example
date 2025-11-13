@@ -156,7 +156,7 @@ void (async () => {
       ),
       TE.map(extract),
       TE.tapIO(debugLog),
-      TE.chainEitherKW(codec.decode),
+      TE.flatMapEither(codec.decode),
     );
 
   const axiosGet = axiosRequest(
