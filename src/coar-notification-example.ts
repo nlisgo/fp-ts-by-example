@@ -46,6 +46,11 @@ void (async () => {
     log(`${entry.prefix}: ${formattedData}`)(`(Debug level: ${entry.debugLevel}) [item: ${entry.item}]`);
   };
 
+  const passthroughIO = <A>(io: (a: A) => IO.IO<void>) => (a: A): A => {
+    io(a)();
+    return a;
+  };
+
   const createDebugLog = (
     store: LogEntries,
     item: Item,
@@ -239,9 +244,9 @@ void (async () => {
     );
 
     return pipe(
-      TE.of(coarNotificationUri),
-      TE.tapIO(debugLog('(1a) retrieve action announcement uri from COAR notification uri', debugLevelValues.BASIC)),
-      TE.flatMap(retrieveAnnouncementActionUriFromCoarNotificationUri(debugLog)),
+      coarNotificationUri,
+      passthroughIO(debugLog('(1a) retrieve action announcement uri from COAR notification uri', debugLevelValues.BASIC)),
+      retrieveAnnouncementActionUriFromCoarNotificationUri(debugLog),
       TE.tapIO(debugLog('(1b) retrieved action announcement uri', debugLevelValues.BASIC)),
       TE.tapIO(debugLog('(2a) retrieve signposting DocMap uri from action announcement uri', debugLevelValues.BASIC)),
       TE.flatMap(retrieveSignpostingDocmapUriFromAnnouncementActionUri(debugLog)),
