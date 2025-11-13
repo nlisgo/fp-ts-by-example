@@ -182,7 +182,7 @@ void (async () => {
     TE.map((ref) => ref.uri),
   );
 
-  const retrieveDocmapFromSignpostingDocmapUri = (
+  const retrieveActionDoiFromSignpostingDocmapUri = (
     debugLog: DebugLog,
   ) => (signpostingDocmapUri: string) => pipe(
     signpostingDocmapUri,
@@ -190,19 +190,12 @@ void (async () => {
     TE.tapIO(debugLog(debugLevelValues.DOCMAP_ESSENTIALS)),
     TE.map(RA.findFirst(docmapCodec.is)),
     TE.flatMap(TE.fromOption(() => new Error('DocMaps array is empty'))),
-  );
-
-  const retrieveActionDoiFromDocmap = (
-    debugLog: DebugLog,
-  ) => (
-    docmap: t.TypeOf<typeof docmapCodec>,
-  ) => pipe(
-    docmap.steps,
-    R.collect(S.Ord)((_, step) => step),
-    RA.findFirst(stepCodec.is),
-    E.fromOption(() => 'No action DOI found'),
-    E.map((step) => step.actions[0].outputs[0].doi),
-    E.map(passthroughIO(debugLog(debugLevelValues.ACTION_DOI))),
+    TE.map((docmap) => docmap.steps),
+    TE.map(R.collect(S.Ord)((_, step) => step)),
+    TE.map(RA.findFirst(stepCodec.is)),
+    TE.flatMapEither(E.fromOption(() => 'No action DOI found')),
+    TE.map((step) => step.actions[0].outputs[0].doi),
+    TE.tapIO(debugLog(debugLevelValues.ACTION_DOI)),
   );
 
   const retrieveDocmapFromCoarNotificationUri = async (
@@ -229,10 +222,7 @@ void (async () => {
       TE.tapIO(debugLog('(2a) retrieve signposting DocMap uri from action announcement uri', debugLevelValues.BASIC)),
       TE.flatMap(retrieveSignpostingDocmapUriFromAnnouncementActionUri(debugLog)),
       TE.tapIO(debugLog('(2b) retrieved signposting DocMap uri', debugLevelValues.BASIC)),
-      TE.flatMap(retrieveDocmapFromSignpostingDocmapUri(debugLog)),
-      (foo) => foo,
-      TE.flatMapEither(retrieveActionDoiFromDocmap(debugLog)),
-      (foo) => foo,
+      TE.flatMap(retrieveActionDoiFromSignpostingDocmapUri(debugLog)),
       TE.mapLeft(logError(`Error retrieving action DOI for item ${item}`)),
     )();
   };
