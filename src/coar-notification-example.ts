@@ -172,10 +172,8 @@ void (async () => {
   const retrieveAnnouncementActionUriFromCoarNotificationUri = (
     debugLog: DebugLog,
   ) => (coarNotificationUri: string) => pipe(
-    TE.of(coarNotificationUri),
-    TE.flatMap(
-      axiosGet(notificationCodec, debugLog(debugLevelValues.COAR_NOTIFICATION)),
-    ),
+    coarNotificationUri,
+    axiosGet(notificationCodec, debugLog(debugLevelValues.COAR_NOTIFICATION)),
     TE.tapIO(debugLog(debugLevelValues.COAR_NOTIFICATION_ESSENTIALS)),
     TE.map(({ object }) => object.id),
   );
@@ -183,10 +181,8 @@ void (async () => {
   const retrieveSignpostingDocmapUriFromAnnouncementActionUri = (
     debugLog: DebugLog,
   ) => (announcementActionUri: string) => pipe(
-    TE.of(announcementActionUri),
-    TE.flatMap(
-      axiosHead(headersLinkCodec, debugLog(debugLevelValues.EVALUATION_HEADERS)),
-    ),
+    announcementActionUri,
+    axiosHead(headersLinkCodec, debugLog(debugLevelValues.EVALUATION_HEADERS)),
     TE.tapIO(debugLog(debugLevelValues.EVALUATION_HEADERS_ESSENTIALS)),
     TE.map(({ link }) => link),
     TE.map(LinkHeader.parse),
@@ -199,10 +195,8 @@ void (async () => {
   const retrieveDocmapFromSignpostingDocmapUri = (
     debugLog: DebugLog,
   ) => (signpostingDocmapUri: string) => pipe(
-    TE.of(signpostingDocmapUri),
-    TE.flatMap(
-      axiosGet(docmapsCodec, debugLog(debugLevelValues.DOCMAP)),
-    ),
+    signpostingDocmapUri,
+    axiosGet(docmapsCodec, debugLog(debugLevelValues.DOCMAP)),
     TE.tapIO(debugLog(debugLevelValues.DOCMAP_ESSENTIALS)),
     TE.map(RA.head),
     TE.flatMap(TE.fromOption(() => new Error('DocMaps array is empty'))),
@@ -253,9 +247,8 @@ void (async () => {
       TE.flatMap(retrieveSignpostingDocmapUriFromAnnouncementActionUri(debugLog)),
       TE.tapIO(debugLog('(2b) retrieved signposting DocMap uri', debugLevelValues.BASIC)),
       TE.flatMap(retrieveDocmapFromSignpostingDocmapUri(debugLog)),
-      TE.mapLeft(logError(`Error retrieving DocMap for item ${item}`)),
       TE.flatMap(retrieveActionDoiFromDocmap(debugLog)),
-      TE.mapLeft(logError(`Error retrieving action DOI for DocMap ${item}`)),
+      TE.mapLeft(logError(`Error retrieving action DOI for item ${item}`)),
     )();
   };
 
@@ -272,20 +265,20 @@ void (async () => {
   );
 
   await retrieveDocmapsFromCoarNotificationUris([
-    {
-      uuid: 'bf3513ee-1fef-4f30-a61b-20721b505f11',
-      debug: [
-        debugLevelValues.COAR_NOTIFICATION,
-        debugLevelValues.ACTION_DOI,
-      ],
-    },
-    {
-      uuid: '9154949f-6da4-4f16-8997-a0762f19b05a',
-      debug: [
-        debugLevelValues.DOCMAP,
-        debugLevelValues.ACTION_DOI,
-      ],
-    },
+    // {
+    //   uuid: 'bf3513ee-1fef-4f30-a61b-20721b505f11',
+    //   debug: [
+    //     debugLevelValues.COAR_NOTIFICATION,
+    //     debugLevelValues.ACTION_DOI,
+    //   ],
+    // },
+    // {
+    //   uuid: '9154949f-6da4-4f16-8997-a0762f19b05a',
+    //   debug: [
+    //     debugLevelValues.DOCMAP,
+    //     debugLevelValues.ACTION_DOI,
+    //   ],
+    // },
     {
       uuid: '7140557f-6fe6-458f-ad59-21a9d53c8eb2',
       debug: [
