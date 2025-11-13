@@ -1,9 +1,11 @@
 import axios from 'axios';
+import * as E from 'fp-ts/Either';
 import type * as IO from 'fp-ts/IO';
-import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
+import * as R from 'fp-ts/Record';
 import * as TE from 'fp-ts/TaskEither';
 import { pipe } from 'fp-ts/function';
+import * as S from 'fp-ts/string';
 import LinkHeader from 'http-link-header';
 import * as t from 'io-ts';
 import { log, logError, toError } from './utils/log';
@@ -17,6 +19,7 @@ void (async () => {
     EVALUATION_HEADERS_ESSENTIALS: 'Evaluation headers (essentials)',
     DOCMAP: 'DocMap',
     DOCMAP_ESSENTIALS: 'DocMap (essentials)',
+    ACTION_DOI: 'Action DOI',
   } as const;
 
   type DebugLevel = typeof debugLevelValues[keyof typeof debugLevelValues];
@@ -118,6 +121,15 @@ void (async () => {
     }),
   ]);
 
+  const actionWithDoi = t.strict({
+    type: t.union([
+      t.literal('editorial-decision'),
+      t.literal('review'),
+      t.literal('reply'),
+    ]),
+    doi: t.string,
+  });
+
   const docmapCodec = t.strict({
     type: t.literal('docmap'),
     id: t.string,
@@ -196,6 +208,26 @@ void (async () => {
     TE.flatMap(TE.fromOption(() => new Error('DocMaps array is empty'))),
   );
 
+  const retrieveActionDoiFromDocmap = (
+    debugLog: DebugLog,
+  ) => (
+    docmap: t.TypeOf<typeof docmapCodec>,
+  ) => pipe(
+    docmap.steps,
+    R.map(
+      (step) => step.actions.flatMap(
+        (action) => action.outputs,
+      ),
+    ),
+    R.collect(S.Ord)((_, value) => value),
+    RA.flatten,
+    RA.findFirst(actionWithDoi.is),
+    E.fromOption(() => 'No action DOI found'),
+    E.map(({ doi }) => doi),
+    TE.fromEither,
+    TE.tapIO(debugLog(debugLevelValues.ACTION_DOI)),
+  );
+
   const retrieveDocmapFromCoarNotificationUri = async (
     coarNotificationUri: string,
     item: Item,
@@ -221,7 +253,9 @@ void (async () => {
       TE.flatMap(retrieveSignpostingDocmapUriFromAnnouncementActionUri(debugLog)),
       TE.tapIO(debugLog('(2b) retrieved signposting DocMap uri', debugLevelValues.BASIC)),
       TE.flatMap(retrieveDocmapFromSignpostingDocmapUri(debugLog)),
-      TE.mapLeft(logError(`Error retrieving docmap for item ${item}`)),
+      TE.mapLeft(logError(`Error retrieving DocMap for item ${item}`)),
+      TE.flatMap(retrieveActionDoiFromDocmap(debugLog)),
+      TE.mapLeft(logError(`Error retrieving action DOI for DocMap ${item}`)),
     )();
   };
 
@@ -242,18 +276,21 @@ void (async () => {
       uuid: 'bf3513ee-1fef-4f30-a61b-20721b505f11',
       debug: [
         debugLevelValues.COAR_NOTIFICATION,
+        debugLevelValues.ACTION_DOI,
       ],
     },
     {
       uuid: '9154949f-6da4-4f16-8997-a0762f19b05a',
       debug: [
         debugLevelValues.DOCMAP,
+        debugLevelValues.ACTION_DOI,
       ],
     },
     {
       uuid: '7140557f-6fe6-458f-ad59-21a9d53c8eb2',
       debug: [
         debugLevelValues.EVALUATION_HEADERS,
+        debugLevelValues.ACTION_DOI,
       ],
     },
   ]);
