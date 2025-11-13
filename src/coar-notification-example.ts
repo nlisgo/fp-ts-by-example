@@ -8,6 +8,7 @@ import { pipe } from 'fp-ts/function';
 import * as S from 'fp-ts/string';
 import LinkHeader from 'http-link-header';
 import * as t from 'io-ts';
+import * as tt from 'io-ts-types';
 import { log, logError, toError } from './utils/log';
 
 void (async () => {
@@ -96,60 +97,44 @@ void (async () => {
     profile: t.literal('https://w3id.org/docmaps/context.jsonld'),
   });
 
-  const stepCodec = t.intersection([
-    t.type({
-      inputs: t.readonlyArray(
-        t.strict({
-          doi: t.string,
-        }),
-      ),
-      actions: t.readonlyArray(
-        t.strict({
-          outputs: t.readonlyArray(
-            t.strict({
-              published: t.string,
-              doi: t.string,
-              type: t.string,
-            }),
-          ),
-          inputs: t.readonlyArray(
-            t.strict({
-              doi: t.string,
-            }),
-          ),
-        }),
-      ),
-    }),
-    t.partial({
-      'next-step': t.string,
-      'previous-step': t.string,
-    }),
-  ]);
-
-  const actionWithDoi = t.strict({
-    type: t.union([
-      t.literal('editorial-decision'),
-      t.literal('review'),
-      t.literal('reply'),
-    ]),
-    doi: t.string,
+  const stepCodec = t.type({
+    actions: tt.readonlyNonEmptyArray(
+      t.strict({
+        outputs: tt.readonlyNonEmptyArray(
+          t.strict({
+            published: t.string,
+            doi: t.string,
+            type: t.union([
+              t.literal('editorial-decision'),
+              t.literal('review'),
+              t.literal('reply'),
+            ]),
+          }),
+        ),
+        inputs: tt.readonlyNonEmptyArray(
+          t.strict({
+            published: t.string,
+            doi: t.string,
+            type: t.literal('preprint'),
+          }),
+        ),
+      }),
+    ),
+    assertions: tt.readonlyNonEmptyArray(
+      t.strict({
+        status: t.literal('reviewed'),
+        item: t.string,
+      }),
+    ),
   });
 
   const docmapCodec = t.strict({
-    type: t.literal('docmap'),
-    id: t.string,
-    publisher: t.strict({
-      name: t.string,
-      url: t.string,
-    }),
-    created: t.string,
-    updated: t.string,
-    'first-step': t.literal('_:b0'),
-    steps: t.record(t.string, stepCodec),
-    '@context': t.string,
+    steps: t.record(t.string, t.unknown),
   });
 
-  const docmapsCodec = t.readonlyArray(docmapCodec);
+  const docmapsCodec = tt.readonlyNonEmptyArray(
+    t.unknown,
+  );
 
   const axiosRequest = <R>(
     request: (uri: string) => Promise<R>,
@@ -203,7 +188,7 @@ void (async () => {
     signpostingDocmapUri,
     axiosGet(docmapsCodec, debugLog(debugLevelValues.DOCMAP)),
     TE.tapIO(debugLog(debugLevelValues.DOCMAP_ESSENTIALS)),
-    TE.map(RA.head),
+    TE.map(RA.findFirst(docmapCodec.is)),
     TE.flatMap(TE.fromOption(() => new Error('DocMaps array is empty'))),
   );
 
@@ -213,16 +198,10 @@ void (async () => {
     docmap: t.TypeOf<typeof docmapCodec>,
   ) => pipe(
     docmap.steps,
-    R.map(
-      (step) => step.actions.flatMap(
-        (action) => action.outputs,
-      ),
-    ),
-    R.collect(S.Ord)((_, value) => value),
-    RA.flatten,
-    RA.findFirst(actionWithDoi.is),
+    R.collect(S.Ord)((_, step) => step),
+    RA.findFirst(stepCodec.is),
     E.fromOption(() => 'No action DOI found'),
-    E.map(({ doi }) => doi),
+    E.map((step) => step.actions[0].outputs[0].doi),
     E.map(passthroughIO(debugLog(debugLevelValues.ACTION_DOI))),
   );
 
@@ -251,7 +230,9 @@ void (async () => {
       TE.flatMap(retrieveSignpostingDocmapUriFromAnnouncementActionUri(debugLog)),
       TE.tapIO(debugLog('(2b) retrieved signposting DocMap uri', debugLevelValues.BASIC)),
       TE.flatMap(retrieveDocmapFromSignpostingDocmapUri(debugLog)),
+      (foo) => foo,
       TE.flatMapEither(retrieveActionDoiFromDocmap(debugLog)),
+      (foo) => foo,
       TE.mapLeft(logError(`Error retrieving action DOI for item ${item}`)),
     )();
   };
