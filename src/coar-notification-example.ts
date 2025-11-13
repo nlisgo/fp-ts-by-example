@@ -223,8 +223,7 @@ void (async () => {
     RA.findFirst(actionWithDoi.is),
     E.fromOption(() => 'No action DOI found'),
     E.map(({ doi }) => doi),
-    TE.fromEither,
-    TE.tapIO(debugLog(debugLevelValues.ACTION_DOI)),
+    E.map(passthroughIO(debugLog(debugLevelValues.ACTION_DOI))),
   );
 
   const retrieveDocmapFromCoarNotificationUri = async (
@@ -252,7 +251,7 @@ void (async () => {
       TE.flatMap(retrieveSignpostingDocmapUriFromAnnouncementActionUri(debugLog)),
       TE.tapIO(debugLog('(2b) retrieved signposting DocMap uri', debugLevelValues.BASIC)),
       TE.flatMap(retrieveDocmapFromSignpostingDocmapUri(debugLog)),
-      TE.flatMap(retrieveActionDoiFromDocmap(debugLog)),
+      TE.flatMapEither(retrieveActionDoiFromDocmap(debugLog)),
       TE.mapLeft(logError(`Error retrieving action DOI for item ${item}`)),
     )();
   };
