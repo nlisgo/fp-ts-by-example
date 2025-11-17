@@ -128,13 +128,9 @@ void (async () => {
     ),
   });
 
-  const docmapCodec = t.strict({
+  const docmapsCodec = tt.readonlyNonEmptyArray(t.strict({
     steps: t.record(t.string, t.unknown),
-  });
-
-  const docmapsCodec = tt.readonlyNonEmptyArray(
-    t.unknown,
-  );
+  }));
 
   const axiosRequest = <R>(
     request: (uri: string) => Promise<R>,
@@ -188,9 +184,7 @@ void (async () => {
     signpostingDocmapUri,
     axiosGet(docmapsCodec, debugLog(debugLevelValues.DOCMAP)),
     TE.tapIO(debugLog(debugLevelValues.DOCMAP_ESSENTIALS)),
-    TE.map(RA.findFirst(docmapCodec.is)),
-    TE.flatMapEither(E.fromOption(() => new Error('DocMaps array is empty'))),
-    TE.map((docmap) => docmap.steps),
+    TE.map((docmaps) => docmaps[0].steps),
     TE.map(R.collect(S.Ord)((_, step) => step)),
     TE.map(RA.findFirst(stepCodec.is)),
     TE.flatMapEither(E.fromOption(() => 'No action DOI found')),
