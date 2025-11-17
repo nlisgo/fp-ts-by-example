@@ -178,7 +178,7 @@ void (async () => {
     TE.map(LinkHeader.parse),
     TE.map(({ refs }) => refs),
     TE.map(RA.findFirst(signpostingDocmapLinkCodec.is)),
-    TE.flatMap(TE.fromOption(() => new Error('Header links array is empty'))),
+    TE.flatMapEither(E.fromOption(() => new Error('Header links array is empty'))),
     TE.map((ref) => ref.uri),
   );
 
@@ -189,7 +189,7 @@ void (async () => {
     axiosGet(docmapsCodec, debugLog(debugLevelValues.DOCMAP)),
     TE.tapIO(debugLog(debugLevelValues.DOCMAP_ESSENTIALS)),
     TE.map(RA.findFirst(docmapCodec.is)),
-    TE.flatMap(TE.fromOption(() => new Error('DocMaps array is empty'))),
+    TE.flatMapEither(E.fromOption(() => new Error('DocMaps array is empty'))),
     TE.map((docmap) => docmap.steps),
     TE.map(R.collect(S.Ord)((_, step) => step)),
     TE.map(RA.findFirst(stepCodec.is)),
